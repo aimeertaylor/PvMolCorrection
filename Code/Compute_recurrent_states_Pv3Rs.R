@@ -39,12 +39,12 @@ colnames(prior_unnorm) = gsub(pattern = 'ReInfection_mean_theta', replacement = 
 prior <- prior_unnorm / rowSums(prior_unnorm)
 
 # Save prior estimates for DevFiles/Understanding_prior.R
-save(prior, prior_unnorm, file = "~/Dropbox/Vivax_VHXBPD_reanalysis/RData/prior_estimates.RData")
+save(prior, prior_unnorm, file = "../RData/prior_estimates.RData")
 
 # ==============================================================================
 # Compute new results
 # ==============================================================================
-TimeToEvent <- Uniform <- TimeToEvent_pairwise <- Uniform_pairwise <- list()
+TimeToEvent_joint <- Uniform_joint <- TimeToEvent_pairwise <- Uniform_pairwise <- list()
 paired_data_pids <- names(which(sapply(ys_VHX_BPD, length) > 1))
 tictoc::tic()
 for(pid in paired_data_pids) {
@@ -59,13 +59,13 @@ for(pid in paired_data_pids) {
   
   # Store result in a list
   if (sum_MOIs > 8) { # Don't compute joint if more than 8 genotypes
-    TimeToEvent[[pid]] <- NA
-    Uniform[[pid]] <- NA
+    TimeToEvent_joint[[pid]] <- NA
+    Uniform_joint[[pid]] <- NA
     TimeToEvent_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD, prior = prior_per_patient)
     Uniform_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD)    
   } else { 
-    TimeToEvent[[pid]] <- compute_posterior(y, fs_VHX_BPD, prior = prior_per_patient)
-    Uniform[[pid]] <- compute_posterior(y, fs_VHX_BPD)
+    TimeToEvent_joint[[pid]] <- compute_posterior(y, fs_VHX_BPD, prior = prior_per_patient)
+    Uniform_joint[[pid]] <- compute_posterior(y, fs_VHX_BPD)
     TimeToEvent_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD, prior = prior_per_patient)
     Uniform_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD)
   }
@@ -75,5 +75,5 @@ tictoc::toc()
 # ==============================================================================
 # Save
 # ==============================================================================
-save(TimeToEvent, Uniform, TimeToEvent_pairwise, Uniform_pairwise,
-     file = "~/Dropbox/Vivax_VHXBPD_reanalysis/RData/results_Pv3Rs.RData")
+save(TimeToEvent_joint, Uniform_joint, TimeToEvent_pairwise, Uniform_pairwise,
+     file = "../RData/results_Pv3Rs.RData")
