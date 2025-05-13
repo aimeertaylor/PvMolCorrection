@@ -43,15 +43,15 @@ euclidean <- function(a, b) sqrt(sum((a - b)^2))
 
 # Function to extract states whose posterior probability exceeds p
 get_post_states <- function(x, p = 0.1) {
-  paste(sort(colnames(Pv3Rs_Uniform)[which(x > p)]), collapse = "_")
+  paste(sort(colnames(new_Uniform)[which(x > p)]), collapse = "_")
 }
 
 # Load new results
-load("../RData/PreMay/results_Pv3Rs.RData") 
+load("../RData/PreMay/results_new.RData") 
 
 # Extract marginal probabilities
-Pv3Rs_Uniform <- do.call(rbind, sapply(Uniform, function(x) x["marg"]))
-Pv3Rs_TimeToEvent <- do.call(rbind, sapply(TimeToEvent, function(x) x["marg"]))
+new_Uniform <- do.call(rbind, sapply(results_Uniform, function(x) x["marg"]))
+new_TimeToEvent <- do.call(rbind, sapply(results_TimeToEvent, function(x) x["marg"]))
 
 # Load directly-estimated old results 
 path <- "~/Documents/RecurrentVivax" # Path to old estimates
@@ -96,7 +96,7 @@ for (comparator in c("median", "mean")) {
   # ==============================================================================
   # Check the same episodes are directly-estimated within new and old
   # ==============================================================================
-  setequal(row.names(Pv3Rs_TimeToEvent), row.names(Pv3Rs_Uniform))
+  setequal(row.names(new_TimeToEvent), row.names(new_Uniform))
   setequal(row.names(old_TimeToEvent), row.names(old_Uniform))
   
   # ==============================================================================
@@ -115,8 +115,8 @@ for (comparator in c("median", "mean")) {
   # ==============================================================================
   # Extract comparable 
   # ==============================================================================
-  comparable <- intersect(rownames(Pv3Rs_Uniform), rownames(old_Uniform))  
-  incomparable_new <- rownames(Pv3Rs_Uniform)[!rownames(Pv3Rs_Uniform) %in% comparable]
+  comparable <- intersect(rownames(new_Uniform), rownames(old_Uniform))  
+  incomparable_new <- rownames(new_Uniform)[!rownames(new_Uniform) %in% comparable]
   incomparable_old <- rownames(old_Uniform)[!rownames(old_Uniform) %in% comparable]
   
   # ==============================================================================
@@ -132,7 +132,7 @@ for (comparator in c("median", "mean")) {
   
   # Are the BPD all comparable? Yes! 
   if(setequal(rownames(old_Uniform)[grepl("BPD", rownames(old_Uniform))], 
-              rownames(Pv3Rs_Uniform)[grepl("BPD", rownames(Pv3Rs_Uniform))])) {
+              rownames(new_Uniform)[grepl("BPD", rownames(new_Uniform))])) {
     print("All BPD are comparable")
   } else {
     print("Some BPD incomparable")
@@ -147,7 +147,7 @@ for (comparator in c("median", "mean")) {
   # Extract and save BPD time-to-event estimates for Compute_PQ_failure_rates_new.R
   #===============================================================================
   Results_BPD <- as.data.frame(cbind(old = old_TimeToEvent[comparable_BPD, "I"], 
-                                     new = Pv3Rs_TimeToEvent[comparable_BPD, "I"]))
+                                     new = new_TimeToEvent[comparable_BPD, "I"]))
   save(Results_BPD, file = 
          sprintf("~/Dropbox/Vivax_VHXBPD_reanalysis/RData/Results_BPD_%s.RData", comparator))
   
@@ -156,9 +156,9 @@ for (comparator in c("median", "mean")) {
   #===============================================================================
   # L, I, L&I (Time to event), 
   # L, I, L&I, C, L&C (Uniform) 
-  unique(apply(Pv3Rs_Uniform, 1, get_post_states))
+  unique(apply(new_Uniform, 1, get_post_states))
   unique(apply(old_Uniform, 1, get_post_states))
-  unique(apply(Pv3Rs_TimeToEvent, 1, get_post_states))
+  unique(apply(new_TimeToEvent, 1, get_post_states))
   unique(apply(old_TimeToEvent, 1, get_post_states))
   
   
@@ -167,9 +167,9 @@ for (comparator in c("median", "mean")) {
   #===============================================================================
   # Project probabilities onto 2D simplex coordinates 
   xy0_u <- apply(old_Uniform[comparable,], 1, project2D)
-  xy1_u <- apply(Pv3Rs_Uniform[comparable,], 1, project2D)
+  xy1_u <- apply(new_Uniform[comparable,], 1, project2D)
   xy0_t <- apply(old_TimeToEvent[comparable,], 1, project2D)
-  xy1_t <- apply(Pv3Rs_TimeToEvent[comparable,], 1, project2D)
+  xy1_t <- apply(new_TimeToEvent[comparable,], 1, project2D)
   
   # Compute distance on 2D simplex
   diffs_Uniform <- sapply(1:ncol(xy0_u), function(i) euclidean(xy0_u[,i], xy1_u[,i]))
@@ -216,16 +216,16 @@ for (comparator in c("median", "mean")) {
        ylab = "New relapse posterior")
   abline(a = 0, b = 1, col = "lightgray")
   points(x = old_Uniform[comparable_VHX, "L"], 
-         y = Pv3Rs_Uniform[comparable_VHX, "L"], 
+         y = new_Uniform[comparable_VHX, "L"], 
          pch = 4, col = "cornflowerblue")
   if (length(setdiff(big_diff_t_VHX, big_diff_u_VHX)) > 0 ){
     text(x = old_Uniform[setdiff(big_diff_t_VHX, big_diff_u_VHX), "L"], 
-         y = Pv3Rs_Uniform[setdiff(big_diff_t_VHX, big_diff_u_VHX), "L"], 
+         y = new_Uniform[setdiff(big_diff_t_VHX, big_diff_u_VHX), "L"], 
          labels = setdiff(big_diff_t_VHX, big_diff_u_VHX), 
          pos = 3, cex = 0.45, xpd = NA)}
   if (length(big_diff_u_VHX) > 0 ){
     text(x = old_Uniform[big_diff_u_VHX, "L"], 
-         y = Pv3Rs_Uniform[big_diff_u_VHX, "L"], 
+         y = new_Uniform[big_diff_u_VHX, "L"], 
          labels = big_diff_u_VHX, 
          pos = 3, cex = 0.75, xpd = NA)}
   
@@ -235,16 +235,16 @@ for (comparator in c("median", "mean")) {
        ylab = "New relapse posterior")
   abline(a = 0, b = 1, col = "lightgray")
   points(x = old_TimeToEvent[comparable_VHX, "L"], 
-         y = Pv3Rs_TimeToEvent[comparable_VHX, "L"], 
+         y = new_TimeToEvent[comparable_VHX, "L"], 
          pch = 4, col = "cornflowerblue")
   if (length(setdiff(big_diff_u_VHX, big_diff_t_VHX)) > 0 ){
     text(x = old_TimeToEvent[setdiff(big_diff_u_VHX, big_diff_t_VHX), "L"], 
-         y = Pv3Rs_TimeToEvent[setdiff(big_diff_u_VHX, big_diff_t_VHX), "L"], 
+         y = new_TimeToEvent[setdiff(big_diff_u_VHX, big_diff_t_VHX), "L"], 
          labels = setdiff(big_diff_u_VHX, big_diff_t_VHX), 
          pos = 3, cex = 0.45, xpd = NA)}
   if (length(big_diff_t_VHX) > 0 ){
     text(x = old_TimeToEvent[big_diff_t_VHX, "L"], 
-         y = Pv3Rs_TimeToEvent[big_diff_t_VHX, "L"], 
+         y = new_TimeToEvent[big_diff_t_VHX, "L"], 
          labels = big_diff_t_VHX, 
          pos = 3, cex = 0.75, xpd = NA)}
   
@@ -255,16 +255,16 @@ for (comparator in c("median", "mean")) {
        ylab = "New relapse posterior")
   abline(a = 0, b = 1, col = "lightgray")
   points(x = old_Uniform[comparable_BPD, "L"], 
-         y = Pv3Rs_Uniform[comparable_BPD, "L"], 
+         y = new_Uniform[comparable_BPD, "L"], 
          pch = 4, col = "cornflowerblue")
   if (length(setdiff(big_diff_t_BPD,  big_diff_u_BPD)) > 0){
     text(x = old_Uniform[setdiff(big_diff_t_BPD,  big_diff_u_BPD), "L"], 
-         y = Pv3Rs_Uniform[setdiff(big_diff_t_BPD,  big_diff_u_BPD), "L"], 
+         y = new_Uniform[setdiff(big_diff_t_BPD,  big_diff_u_BPD), "L"], 
          labels = setdiff(big_diff_t_BPD,  big_diff_u_BPD), 
          pos = 3, cex = 0.45, xpd = NA)}
   if (length(big_diff_u_BPD) > 0 ){
     text(x = old_Uniform[big_diff_u_BPD, "L"], 
-         y = Pv3Rs_Uniform[big_diff_u_BPD, "L"], 
+         y = new_Uniform[big_diff_u_BPD, "L"], 
          labels = big_diff_u_BPD, 
          pos = 3, cex = 0.75, xpd = NA)}
   
@@ -274,16 +274,16 @@ for (comparator in c("median", "mean")) {
        ylab = "New relapse posterior")
   abline(a = 0, b = 1, col = "lightgray")
   points(x = old_TimeToEvent[comparable_BPD, "L"], 
-         y = Pv3Rs_TimeToEvent[comparable_BPD, "L"], 
+         y = new_TimeToEvent[comparable_BPD, "L"], 
          pch = 4, col = "cornflowerblue")
   if (length(setdiff(big_diff_u_BPD, big_diff_t_BPD)) > 0 ){
     text(x = old_TimeToEvent[setdiff(big_diff_u_BPD, big_diff_t_BPD), "L"], 
-         y = Pv3Rs_TimeToEvent[setdiff(big_diff_u_BPD, big_diff_t_BPD), "L"], 
+         y = new_TimeToEvent[setdiff(big_diff_u_BPD, big_diff_t_BPD), "L"], 
          labels = setdiff(big_diff_u_BPD, big_diff_t_BPD), 
          pos = 3, cex = 0.45, xpd = NA)}
   if (length(big_diff_t_BPD) > 0){
     text(x = old_TimeToEvent[big_diff_t_BPD, "L"], 
-         y = Pv3Rs_TimeToEvent[big_diff_t_BPD, "L"], 
+         y = new_TimeToEvent[big_diff_t_BPD, "L"], 
          labels = big_diff_t_BPD, 
          pos = 3, cex = 0.75, xpd = NA)}
   
