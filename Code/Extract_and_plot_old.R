@@ -15,63 +15,147 @@
 ################################################################################
 
 rm(list = ls())
+library(Pv3Rs)
+par(mfrow = c(2,3))
 
-
+load("../RData/marg_results_Pv3Rs.RData")
 path <- "~/Documents/RecurrentVivax/" # Path to old estimates
 load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples_Tagnostic.RData', path))
 load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples.RData', path))
 load("../Rdata/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
+rownames(MS_final) <- MS_final[,"Episode_Identifier"]
 
-# Create a matrix of estimates using MS_final
-TimeToEvent_old <- data.frame(C = MS_final[,"C_median"], L = MS_final[,"L_median"], I = MS_final[,"I_median"])
-rownames(TimeToEvent_old) <- MS_final[,"Episode_Identifier"]
-TimeToEvent_old$joint <- MS_final[,"TotalEpisodes"] <= 3
-
-# Check the median estimates from MS_final agree with those in thetas_9MS
-all(TimeToEvent_old[rownames(thetas_9MS), "C"] == thetas_9MS[,"C50%"], na.rm = T)
-all(TimeToEvent_old[rownames(thetas_9MS), "L"] == thetas_9MS[,"L50%"], na.rm = T)
-all(TimeToEvent_old[rownames(thetas_9MS), "I"] == thetas_9MS[,"I50%"], na.rm = T)
+# Check median values are the same across MS_final and thetas_9MS
+all(MS_final[rownames(thetas_9MS), "C"] == thetas_9MS[,"C50%"], na.rm = T)
+all(MS_final[rownames(thetas_9MS), "L"] == thetas_9MS[,"L50%"], na.rm = T)
+all(MS_final[rownames(thetas_9MS), "I"] == thetas_9MS[,"I50%"], na.rm = T)
 # thetas_9MS inc pids with total MOI 6 where MS_final doesnt, hence na.rm = T abv:
-rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(TimeToEvent_old)] 
+rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(MS_final)] 
 
 
 #===============================================================================
-# Compare Time-to-Event results
+# Compare Time-to-Event results:
+# median with new for both joint and pairwise 
+# mean with new for joint
 #===============================================================================
-load("../RData/marg_results_Pv3Rs.RData")
 
 # Check overlap 
-all(rownames(TimeToEvent_old) %in% rownames(TimeToEvent_Pv3Rs))
-all(rownames(TimeToEvent_Pv3Rs) %in% rownames(TimeToEvent_old))
+all(rownames(MS_final) %in% rownames(TimeToEvent_Pv3Rs))
+all(rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))
 
 # Check missing meets expectation: yes; see Analysable_data.png
-rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(TimeToEvent_old))]
+rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))]
 # "VHX_239_2" "VHX_33_2"  "VHX_39_2"  "VHX_461_2" "VHX_52_2"  "VHX_583_2"
 
 # Compare old and new relapse probabilities
-par(mfrow = c(2,2))
-plot(y = TimeToEvent_old[,"I"], 
-     x = TimeToEvent_Pv3Rs[rownames(TimeToEvent_old), "I"],
-     pch = 20, col = 1+grepl("BPD", rownames(TimeToEvent_old)))
+plot(NULL, xlim = c(0,1), ylim = c(0,1), xlab = "Pv3Rs", ylab = "Prototype",
+     bty = "n", main = "Recrudescence")
 abline(a = 0, b = 1, lty = "dotted")
-plot(y = TimeToEvent_old[,"C"], 
-     x = TimeToEvent_Pv3Rs[rownames(TimeToEvent_old), "C"],
-     pch = 20, col = 1+grepl("BPD", rownames(TimeToEvent_old)))
-abline(a = 0, b = 1, lty = "dotted")
+segments(x0 = TimeToEvent_Pv3Rs[rownames(MS_final), "C"], 
+         x1 = TimeToEvent_Pv3Rs[rownames(MS_final), "C"], 
+         y0 = MS_final[,"C_lower"], y1 = MS_final[,"C_upper"], col = "lightgray")
+points(y = MS_final[,"C_median"], 
+       x = TimeToEvent_Pv3Rs[rownames(MS_final), "C"], 
+       pch = 21, bg = "lightgrey")
+points(y = thetas_9MS[,"C"], 
+       x = TimeToEvent_Pv3Rs[rownames(thetas_9MS), "C"], 
+       pch = 20, cex = 0.5)
 
-plot(y = TimeToEvent_old[,"L"], 
-     x = TimeToEvent_Pv3Rs[rownames(TimeToEvent_old), "L"],
-     pch = 20, col = 1+grepl("BPD", rownames(TimeToEvent_old)))
+plot(NULL, xlim = c(0,1), ylim = c(0,1), xlab = "Pv3Rs", ylab = "Prototype", 
+     bty = "n", main = "Reinfection")
 abline(a = 0, b = 1, lty = "dotted")
+segments(x0 = TimeToEvent_Pv3Rs[rownames(MS_final), "I"], 
+         x1 = TimeToEvent_Pv3Rs[rownames(MS_final), "I"], 
+         y0 = MS_final[,"I_lower"], y1 = MS_final[,"I_upper"], col = "lightgray")
+points(y = MS_final[,"I_median"], 
+       x = TimeToEvent_Pv3Rs[rownames(MS_final), "I"], 
+       pch = 21, bg = "lightgrey")
+points(y = thetas_9MS[,"I"], 
+       x = TimeToEvent_Pv3Rs[rownames(thetas_9MS), "I"], 
+       pch = 20, cex = 0.5)
+
+plot(NULL, xlim = c(0,1), ylim = c(0,1), xlab = "Pv3Rs", ylab = "Prototype",
+     bty = "n", main = "Relapse")
+abline(a = 0, b = 1, lty = "dotted")
+segments(x0 = TimeToEvent_Pv3Rs[rownames(MS_final), "L"], 
+         x1 = TimeToEvent_Pv3Rs[rownames(MS_final), "L"], 
+         y0 = MS_final[,"L_lower"], y1 = MS_final[,"L_upper"], col = "lightgray")
+points(y = MS_final[,"L_median"], 
+       x = TimeToEvent_Pv3Rs[rownames(MS_final), "L"], 
+       pch = 21, bg = "lightgrey")
+points(y = thetas_9MS[,"L"], 
+       x = TimeToEvent_Pv3Rs[rownames(thetas_9MS), "L"], 
+       pch = 20, cex = 0.5)
+      
 # Extract and annotate big differences 
-diffs <- abs(TimeToEvent_old[,"L"] - TimeToEvent_Pv3Rs[rownames(TimeToEvent_old), "L"])
-big_diffs <- rownames(TimeToEvent_old)[which(diffs > 0.4)]
-text(x = TimeToEvent_Pv3Rs[big_diffs, "L"], y = TimeToEvent_old[big_diffs, "L"], 
+diffs <- abs(MS_final[,"L_median"] - TimeToEvent_Pv3Rs[rownames(MS_final), "L"])
+big_diffs <- rownames(MS_final)[which(diffs > 0.4)]
+text(x = TimeToEvent_Pv3Rs[big_diffs, "L"], y = MS_final[big_diffs, "L_median"], 
      labels = big_diffs, pos = c(4,2))
+
+
+#===============================================================================
+# Compare Uniform results:
+# median and mean for joint only
+#===============================================================================
+# Compare old and new relapse probabilities
+plot(NULL, xlim = c(0,1), ylim = c(0,1), xlab = "Pv3Rs", ylab = "Prototype",
+     bty = "n", main = "Recrudescence")
+abline(a = 0, b = 1, lty = "dotted")
+segments(x0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "C"], 
+         x1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "C"], 
+         y0 = thetas_9MS_Tagnostic[,"C2.5%"], 
+         y1 = thetas_9MS_Tagnostic[,"C97.5%"], col = "lightgray")
+points(y = thetas_9MS_Tagnostic[,"C50%"], 
+       x = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "C"], 
+       pch = 21, bg = "lightgrey")
+points(y = thetas_9MS_Tagnostic[,"C"], 
+       x = Uniform_Pv3Rs[rownames(thetas_9MS), "C"], 
+       pch = 20, cex = 0.5)
+
+
+plot(NULL, xlim = c(0,1), ylim = c(0,1), xlab = "Pv3Rs", ylab = "Prototype", 
+     bty = "n", main = "Reinfection")
+abline(a = 0, b = 1, lty = "dotted")
+segments(x0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "I"], 
+         x1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "I"], 
+         y0 = thetas_9MS_Tagnostic[,"I2.5%"], y1 = thetas_9MS_Tagnostic[,"I97.5%"], col = "lightgray")
+points(y = thetas_9MS_Tagnostic[,"I50%"], 
+       x = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "I"], 
+       pch = 21, bg = "lightgrey")
+points(y = thetas_9MS_Tagnostic[,"I"], 
+       x = Uniform_Pv3Rs[rownames(thetas_9MS), "I"], 
+       pch = 20, cex = 0.5)
+
+plot(NULL, xlim = c(0,1), ylim = c(0,1), xlab = "Pv3Rs", ylab = "Prototype",
+     bty = "n", main = "Relapse")
+abline(a = 0, b = 1, lty = "dotted")
+segments(x0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "L"], 
+         x1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "L"], 
+         y0 = thetas_9MS_Tagnostic[,"L2.5%"], y1 = thetas_9MS_Tagnostic[,"L97.5%"], col = "lightgray")
+points(y = thetas_9MS_Tagnostic[,"L50%"], 
+       x = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "L"], 
+       pch = 21, bg = "lightgrey")
+points(y = thetas_9MS_Tagnostic[,"L"], 
+       x = Uniform_Pv3Rs[rownames(thetas_9MS), "L"], 
+       pch = 20, cex = 0.5)
+
+# Extract and annotate big differences 
+diffs <- abs(thetas_9MS_Tagnostic[,"L50%"] - Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), "L"])
+big_diffs <- rownames(thetas_9MS_Tagnostic)[which(diffs > 0.4)]
+text(x = Uniform_Pv3Rs[big_diffs, "L"], y = thetas_9MS_Tagnostic[big_diffs, "L50%"], 
+     labels = big_diffs, pos = 4)
+
 
 # Plot data and inspect estimates for the participants with estimates that differ
 # Both 5/9 match; rarer alleles for BPD_562...
 plot_data(ys = ys_VHX_BPD[c("VHX_56", "BPD_562")], fs = fs_VHX_BPD)
-TimeToEvent_old[big_diffs,] 
+MS_final[big_diffs,] 
 TimeToEvent_Pv3Rs[big_diffs,] # BPD more reasonable; VHX: half sib missclassification 
+
+# Plot data and inspect estimates for the participants with estimates that differ
+# Both 5/9 match; rarer alleles for BPD_562...
+plot_data(ys = ys_VHX_BPD[c("VHX_56", "VHX_214", "VHX_298")], fs = fs_VHX_BPD)
+thetas_9MS_Tagnostic[big_diffs,] 
+Uniform_Pv3Rs[big_diffs,] # BPD more reasonable; VHX: half sib missclassification 
 
