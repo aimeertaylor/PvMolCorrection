@@ -16,7 +16,6 @@
 
 rm(list = ls())
 library(Pv3Rs)
-par(mfrow = c(2,3))
 states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
 
 load("../RData/marg_results_Pv3Rs.RData")
@@ -44,6 +43,8 @@ TimeToEvent_xy <- apply(MS_final[,c("C_median", "L_median", "I_median")], 1, pro
 Uniform_xy <- rbind(Uniform_xy, joint = 1) # uniform prior not run for pids 4+ episodes
 TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = colnames(TimeToEvent_xy) %in% rownames(thetas_9MS))
 plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
+
+par(mfrow = c(2,3), mar = c(5.1, 4.1, 4.1, 2.1))
 
 #===============================================================================
 # Compare median and mean old: estimates based on jointly modelled data only
