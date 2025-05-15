@@ -17,6 +17,7 @@
 rm(list = ls())
 library(Pv3Rs)
 states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
+par_default <- par()
 
 load("../RData/marg_results_Pv3Rs.RData")
 path <- "~/Documents/RecurrentVivax/" # Path to old estimates
@@ -44,10 +45,18 @@ Uniform_xy <- rbind(Uniform_xy, joint = 1) # uniform prior not run for pids 4+ e
 TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = colnames(TimeToEvent_xy) %in% rownames(thetas_9MS))
 plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
 
-par(mfrow = c(2,3), mar = c(5.1, 4.1, 4.1, 2.1))
+par(mfrow = c(2,3), mar = par_default$mar)
+
 
 #===============================================================================
 # Compare median and mean old: estimates based on jointly modelled data only
+# Old notes transferred from Compare_recurrent_states: Small variation between mean and median using the uniform prior suggests
+# variation due to time-to-event draws (which we can exactly reproduce)
+# dominates variation due to posterior allele-frequency draws (which we cannot
+# exactly reproduce). As such, generation of estimates for all 100 posterior
+# time-to-event is not rendered worthless by the fact that we cannot recreate
+# draws from the allele frequency posterior exactly (we didn't use set.seed in
+# Pooled_Analysis.Rmd). Nonetheless, it is computationally expensive
 #===============================================================================
 for(s in states){
   plot(x = thetas_9MS[, paste0(s,"50%")], y = thetas_9MS[,s], 
@@ -81,7 +90,7 @@ rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_
 for(s in states){
   
   plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype", 
-       bty = "n", main = names(which(states == s)))
+       bty = "n", main = paste0(names(which(states == s)), ": time-to-event prior")
   abline(a = 0, b = 1, lty = "dotted")
   segments(y0 = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
            y1 = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
@@ -114,7 +123,7 @@ for(s in states){
 for(s in states){
   
   plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype",
-       bty = "n", main = names(which(states == s)))
+       bty = "n", main = paste0(names(which(states == s)), ": uniform prior"))
   abline(a = 0, b = 1, lty = "dotted")
   segments(y0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
            y1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
@@ -142,6 +151,11 @@ for(s in states){
 
 #===============================================================================
 # Data plots: extract pids of big diffs by hand 
+# Old notes transferred from Compare_recurrent_states: 2 of 8 large deviations are undesirable: VHX_91_2 and VHX_56_2 
+# Another good example: VHX_91_3, but not as impacted because VHX_91_3 is not polyclonal
+# Write a vignette around VHX_91_2 and VHX_91_3 and VHX_56_2, 
+# VHX_91 seems to be a true half-sib. VHX_56_2 illustrates problem of new model relapse 
+# being more brittle to genotyping errors where it was not before
 #===============================================================================
 big_diffs_TimeToEvent <- c("VHX_56", "VHX_419", "BPD_562", "BPD_253")
 big_diffs_Uniform <- c("BPD_253", "BPD_70", "VHX_214", "VHX_298", "VHX_452", "VHX_56", "VHX_91")

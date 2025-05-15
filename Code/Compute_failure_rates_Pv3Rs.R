@@ -19,6 +19,32 @@
 # Could-do:
 # 1) Base new computation on median, with lower and upper credible intervals -
 # requires extra computations, which are computationally expensive.
+
+# Copied from Compare_recurrent_states.R (to sort)
+# # Within the old results, we can either compare to the median or the mean (they
+# are not equal - see plots below). Besides supplementary figure 9, almost all
+# figures and computations in Pooled_Analysis.Rmd and thus the Taylor&Watson
+# 2019 are based on the median. This includes the PQ failure rate computations.
+# The old median is used to internally check failure rate
+# computation. The old mean is then compared with the new mean - the new
+# median is computationally expensive to re-estimate, with a small return on
+# investment, especially if new estimates are not included in a manuscript. To
+# extract both median and mean estimates for Compute_PQ_failure_rates_new.R, I
+# thus loop over median and mean. This is suboptimal coding --- would have been
+# better to save both median and mean in Results_BPD --- but it does the job
+# (the time investment to optimise is non-negligible for a small return).
+# 
+# To ensure the only difference between new and old results is the updated
+# model, we use the old allele frequencies and compare new results with those
+# that were directly computed in Taylor & Watson et al. 2019. Those that were
+# directly computed in Taylor & Watson et al. 2019 exclude all those with data
+# on more than three episodes (default argument Max_Eps = 3 of function
+# post_prob_CLI). For three of nine patients whose data were analysed when
+# EXCLUDE_COMPLEX = F (the option to exclude these patients was set to aid
+# illustrative runs of the code), NAs were returned. That said, results
+# generated using the time-to-event posterior estimates as prior estimates also
+# differ because prior estimates plugged into the old model were un-normalised
+# but are normalised here.
 ################################################################################
 rm(list = ls())
 
@@ -43,12 +69,17 @@ Combined_Time_Data_BPD$I_gen <- 0
 # This is suboptimal coding --- would have been better to save both median and
 # mean in Results_BPD --- but it does the job and the time investment to
 # optimise is non-negligible for a small return.
-load("~/Dropbox/Vivax_VHXBPD_reanalysis/RData/Results_BPD_median.RData")
-old_median <- Results_BPD$old; names(old_median) <- row.names(Results_BPD)
-load("~/Dropbox/Vivax_VHXBPD_reanalysis/RData/Results_BPD_mean.RData")
-old_mean <- Results_BPD$old; names(old_mean) <- row.names(Results_BPD)
+path <- "~/Documents/RecurrentVivax" # Path to old estimates
+load(sprintf('%s/RData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples.RData', path))
+old_median <- thetas_9MS[, "I50%"] 
+old_mean <- thetas_9MS[, "I"] 
+names(old_median) <- names(old_mean) <- rownames(thetas_9MS)
+
+# Load new results
+load("../RData/marg_results_Pv3Rs.RData") 
+
 if( !all(names(old_mean) == names(old_median)) ) stop ("Problem with eids")
-Results_BPD <- data.frame(new = Results_BPD$new, old_median, old_mean)
+Results_BPD <- data.frame(new = TimeToEvent_Pv3Rs[names(old_median),"I"], old_median, old_mean)
 rownames(Results_BPD) <- names(old_mean)
 
 # Load time-to-event only based estimates (used when genetic ones unavailable)
