@@ -3,7 +3,7 @@
 # Set up and load new results
 rm(list = ls())
 load("../RData/results_Pv3Rs.RData") 
-par(mfrow = c(2,2))
+par(mfrow = c(2,2), mar = c(0,0,0,0))
 
 #===============================================================================
 # Uniform
@@ -58,56 +58,39 @@ all(BPD == grepl("BPD", rownames(TimeToEvent_Pv3Rs)))
 # Project
 Uniform_xy <- apply(Uniform_Pv3Rs, 1, function(x) project2D(x[1:3]))
 TimeToEvent_xy <- apply(TimeToEvent_Pv3Rs, 1, function(x) project2D(x[1:3]))
-Uniform_LI_log <- Uniform_xy["y",] < -0.27 
-TimeToEvent_LI_log <- Uniform_xy["y",] < -0.27 
 
 # Plot BPD Uniform
-plot_simplex(); title(main = "BPD Uniform", line = -2)
+plot_simplex(); title(main = "BPD Uniform", line = -1.5)
 for(i in which(BPD)){
   points(x = Uniform_xy["x",i], y = Uniform_xy["y",i], 
          col = adjustcolor("black", alpha.f = 0.3), 
-         pch = 17-Uniform_Pv3Rs[i,"joint"])}
-lines(density(Uniform_xy["x",which(BPD)][Uniform_LI_log[which(BPD)]], 
-              bw = "SJ", adjust = 5))
+         pch = 17-Uniform_Pv3Rs[i,"joint"])} 
 
 # Plot BPD TimeToEvent
-plot_simplex(); title(main = "BPD Time-to-event", line = -2)
+plot_simplex(); title(main = "BPD Time-to-event", line = -1.5)
 for(i in which(BPD)){
   points(x = TimeToEvent_xy["x",i], y = TimeToEvent_xy["y",i], 
          col = adjustcolor("black", alpha.f = 0.3), 
          pch = 17-TimeToEvent_Pv3Rs[i,"joint"])}
-lines(density(TimeToEvent_xy["x",which(BPD)][TimeToEvent_LI_log[which(BPD)]], 
-              bw = "SJ", adjust = 8))
-
 
 # Plot VHX Uniform
-plot_simplex(); title(main = "VHX Uniform", line = -2)
+plot_simplex(); title(main = "VHX Uniform", line = -1.5)
 for(i in which(!BPD)){
   points(x = Uniform_xy["x",i], y = Uniform_xy["y",i], 
          col = adjustcolor("black", alpha.f = 0.3), 
          pch = 17-Uniform_Pv3Rs[i,"joint"])}
-lines(density(Uniform_xy["x",which(!BPD)][Uniform_LI_log[which(!BPD)]], 
-              bw = "SJ", adjust = 5))
-legend(x = 0.1, y = 0.5, bty = "n", pch = 20, col = 9:8, inset = 0.01,
-       legend = c("jointly modelled data","pairwise modelled data"))
+legend(x = 0.1, y = 0.5, bty = "n", pch = 16:17, 
+       col = adjustcolor("black", alpha.f = 0.3), 
+       legend = c("Jointly modelled data","Pairwise modelled data"))
 
 # Plot VHX TimeToEvent
-plot_simplex(); title(main = "VHX Time-to-event", line = -2)
+plot_simplex(); title(main = "VHX Time-to-event", line = -1.5)
 for(i in which(!BPD)){
   points(x = TimeToEvent_xy["x",i], y = TimeToEvent_xy["y",i], 
          col = adjustcolor("black", alpha.f = 0.3), 
          pch = 17-TimeToEvent_Pv3Rs[i,"joint"])}
-lines(density(TimeToEvent_xy["x",which(!BPD)][TimeToEvent_LI_log[which(!BPD)]], 
-              bw = "SJ", adjust = 200))
-legend(x = 0.1, y = 0.5, bty = "n", pch = 20, col = 9:8, inset = 0.01,
-       legend = c("jointly modelled data","pairwise modelled data"))
+legend(x = 0.1, y = 0.5, bty = "n", pch = 16:17, 
+       col = adjustcolor("black", alpha.f = 0.3), 
+       legend = c("Jointly modelled data","Pairwise modelled data"))
 
-par(mfrow = c(2,2))
-plot(density(Uniform_xy["x",which(BPD)][Uniform_LI_log[which(BPD)]], 
-              bw = "SJ", adjust = 5))
-plot(density(TimeToEvent_xy["x",which(BPD)][TimeToEvent_LI_log[which(BPD)]], 
-              bw = "SJ", adjust = 8))
-plot(density(Uniform_xy["x",which(!BPD)][Uniform_LI_log[which(!BPD)]], 
-              bw = "SJ", adjust = 5))
-plot(density(TimeToEvent_xy["x",which(!BPD)][TimeToEvent_LI_log[which(!BPD)]], 
-              bw = "SJ", adjust = 200))
+
