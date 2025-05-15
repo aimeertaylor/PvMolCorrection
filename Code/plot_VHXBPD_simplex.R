@@ -1,13 +1,13 @@
 plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
   
-  par(mfrow = c(2,2), mar = c(0,0,0,0))
+  par(mfrow = c(2,2), mar = c(1,0,1,0))
   BPD_uniform <- grepl("BPD", colnames(Uniform_xy))
   BPD_timetoevent <- grepl("BPD", colnames(TimeToEvent_xy))
   
   # Plot BPD Uniform
-  plot_simplex()
+  plot_simplex(v_labels = c("Recrudescence", "Reinfection", "Relapse"))
   title(main = sprintf("BPD uniform: %s estimates", sum(BPD_uniform)), 
-        line = -1.5)
+        line = -0.5)
   for(i in which(BPD_uniform)){
     points(x = Uniform_xy["x",i], y = Uniform_xy["y",i], 
            col = adjustcolor("black", alpha.f = 0.3), 
@@ -18,9 +18,9 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
            legend = c("Jointly modelled data","Pairwise modelled data"))}
    
   # Plot BPD TimeToEvent
-  plot_simplex()
+  plot_simplex(v_labels = c("Recrudescence", "Reinfection", "Relapse"))
   title(main = sprintf("BPD time-to-event: %s estimates", sum(BPD_timetoevent)), 
-        line = -1.5)
+        line = -0.5)
   for(i in which(BPD_timetoevent)){
     points(x = TimeToEvent_xy["x",i], y = TimeToEvent_xy["y",i], 
            col = adjustcolor("black", alpha.f = 0.3), 
@@ -31,9 +31,9 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
          legend = c("Jointly modelled data","Pairwise modelled data"))}
   
   # Plot VHX Uniform
-  plot_simplex()
+  plot_simplex(v_labels = c("Recrudescence", "Reinfection", "Relapse"))
   title(main = sprintf("VHX uniform: %s estimates", sum(!BPD_uniform)), 
-        line = -1.5)
+        line = -0.5)
   for(i in which(!BPD_uniform)){
     points(x = Uniform_xy["x",i], y = Uniform_xy["y",i], 
            col = adjustcolor("black", alpha.f = 0.3), 
@@ -44,9 +44,9 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
          legend = c("Jointly modelled data","Pairwise modelled data"))}
   
   # Plot VHX TimeToEvent
-  plot_simplex()
+  plot_simplex(v_labels = c("Recrudescence", "Reinfection", "Relapse"))
   title(main = sprintf("VHX time-to-event: %s estimates", sum(!BPD_timetoevent)), 
-        line = -1.5)
+        line = -0.5)
   for(i in which(!BPD_timetoevent)){
     points(x = TimeToEvent_xy["x",i], y = TimeToEvent_xy["y",i], 
            col = adjustcolor("black", alpha.f = 0.3), 
