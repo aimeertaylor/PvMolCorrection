@@ -3,7 +3,6 @@
 # Set up and load new results
 rm(list = ls())
 load("../RData/results_Pv3Rs.RData") 
-par(mfrow = c(2,2), mar = c(0,0,0,0))
 
 #===============================================================================
 # Uniform
@@ -51,46 +50,11 @@ save(Uniform_Pv3Rs, TimeToEvent_Pv3Rs, file = "../RData/marg_results_Pv3Rs.RData
 #===============================================================================
 # Plot estimates by study 
 #===============================================================================
-# Extract study indicator and check
-BPD <- grepl("BPD", rownames(Uniform_Pv3Rs))
-all(BPD == grepl("BPD", rownames(TimeToEvent_Pv3Rs)))
-
-# Project
+# Source function, project probabilities, add joint indicator, plot
+source("plot_VHXBPD_simplex.R")
 Uniform_xy <- apply(Uniform_Pv3Rs, 1, function(x) project2D(x[1:3]))
 TimeToEvent_xy <- apply(TimeToEvent_Pv3Rs, 1, function(x) project2D(x[1:3]))
-
-# Plot BPD Uniform
-plot_simplex(); title(main = "BPD Uniform", line = -1.5)
-for(i in which(BPD)){
-  points(x = Uniform_xy["x",i], y = Uniform_xy["y",i], 
-         col = adjustcolor("black", alpha.f = 0.3), 
-         pch = 17-Uniform_Pv3Rs[i,"joint"])} 
-
-# Plot BPD TimeToEvent
-plot_simplex(); title(main = "BPD Time-to-event", line = -1.5)
-for(i in which(BPD)){
-  points(x = TimeToEvent_xy["x",i], y = TimeToEvent_xy["y",i], 
-         col = adjustcolor("black", alpha.f = 0.3), 
-         pch = 17-TimeToEvent_Pv3Rs[i,"joint"])}
-
-# Plot VHX Uniform
-plot_simplex(); title(main = "VHX Uniform", line = -1.5)
-for(i in which(!BPD)){
-  points(x = Uniform_xy["x",i], y = Uniform_xy["y",i], 
-         col = adjustcolor("black", alpha.f = 0.3), 
-         pch = 17-Uniform_Pv3Rs[i,"joint"])}
-legend(x = 0.1, y = 0.5, bty = "n", pch = 16:17, 
-       col = adjustcolor("black", alpha.f = 0.3), 
-       legend = c("Jointly modelled data","Pairwise modelled data"))
-
-# Plot VHX TimeToEvent
-plot_simplex(); title(main = "VHX Time-to-event", line = -1.5)
-for(i in which(!BPD)){
-  points(x = TimeToEvent_xy["x",i], y = TimeToEvent_xy["y",i], 
-         col = adjustcolor("black", alpha.f = 0.3), 
-         pch = 17-TimeToEvent_Pv3Rs[i,"joint"])}
-legend(x = 0.1, y = 0.5, bty = "n", pch = 16:17, 
-       col = adjustcolor("black", alpha.f = 0.3), 
-       legend = c("Jointly modelled data","Pairwise modelled data"))
-
+Uniform_xy <- rbind(Uniform_xy, joint = Uniform_Pv3Rs[,"joint"])
+TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = TimeToEvent_Pv3Rs[,"joint"])
+plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
 
