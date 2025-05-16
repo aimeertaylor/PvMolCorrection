@@ -24,6 +24,7 @@ tab_MOIs <- cbind(tab_MOIs, Total = rowSums(tab_MOIs, na.rm = T),
                   "Typed episode count" = n_epi, 
                   "Total episode count" = epi_counts[names(n_epi)])
 
+
 # For overleaf, compute number of recurrences and participants with paired data
 # (length(MOIs) accounts for n_epi = 1 cases because these feature only once in
 # length(unlist(MOIs)))
@@ -46,3 +47,15 @@ write.csv2(tab_MOIs[tab_MOIs[,"Total"] > 5 | tab_MOIs[,"Typed episode count"] > 
 # colour participants for which estimates had to be generated pairwise: > 3
 # episodes for prototype, > 8 MOI total for Pv3Rs
 # save as excel and take screen shot
+
+# Plot data for pids with a recurrence whose recurrent state probability could
+# not be estimated using the prototype
+png("../Figures/Unestimatable_data.png")
+plot_data(ys = ys_VHX_BPD[c( "VHX_239","VHX_461","VHX_39","VHX_52","VHX_583","VHX_33")], fs = fs_VHX_BPD)
+dev.off()
+
+# Plot all paired data
+png("../Figures/Paired_data.png")
+plot_data(ys = ys_VHX_BPD[names(which(MOIs > 1))], fs = fs_VHX_BPD)
+dev.off()
+
