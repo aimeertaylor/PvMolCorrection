@@ -5,7 +5,7 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
   BPD_timetoevent <- grepl("BPD", colnames(TimeToEvent_xy))
   
   # Plot BPD Uniform
-  plot_simplex(v_labels = c("Recrudescence", "Reinfection", "Relapse"))
+  plot_simplex(v_labels = c("Recrudescence", "Relapse", "Reinfection"))
   title(main = sprintf("BPD uniform: %s estimates", sum(BPD_uniform)), 
         line = -0.5)
   for(i in which(BPD_uniform)){
