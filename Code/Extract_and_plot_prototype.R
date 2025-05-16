@@ -38,15 +38,19 @@ rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(MS_final)]
 #===============================================================================
 # Source function, project probabilities, add joint indicator, plot
 source("plot_VHXBPD_simplex.R")
+png("../Figures/Prototype_simplex.png")
 na_log <- !is.na(thetas_9MS_Tagnostic$`C50%`) # Some entries have NA estimates
 Uniform_xy <- apply(thetas_9MS_Tagnostic[na_log, c("C50%", "L50%", "I50%")], 1, project2D)
 TimeToEvent_xy <- apply(MS_final[,c("C_median", "L_median", "I_median")], 1, project2D)
 Uniform_xy <- rbind(Uniform_xy, joint = 1) # uniform prior not run for pids 4+ episodes
 TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = colnames(TimeToEvent_xy) %in% rownames(thetas_9MS))
 plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
-
+dev.off()
 par(mfrow = c(2,3), mar = par_default$mar)
 
+MS_final[grepl("VHX", rownames(MS_final)) & MS_final$I_median > 0.9, ]
+
+TimeToEvent_xy
 
 #===============================================================================
 # Compare median and mean old: estimates based on jointly modelled data only
@@ -90,7 +94,7 @@ rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_
 for(s in states){
   
   plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype", 
-       bty = "n", main = paste0(names(which(states == s)), ": time-to-event prior")
+       bty = "n", main = paste0(names(which(states == s)), ": time-to-event prior"))
   abline(a = 0, b = 1, lty = "dotted")
   segments(y0 = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
            y1 = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
@@ -172,3 +176,8 @@ plot_data(ys = ys_VHX_BPD[big_diffs_Uniform], fs = fs_VHX_BPD)
 thetas_9MS_Tagnostic[big_diffs, c("C50%", "L50%", "I50%")] 
 Uniform_Pv3Rs[big_diffs,] # BPD more reasonable; VHX: half sib missclassification 
 
+# Example where change is beneficial: Based on the genetic data, BPD_562_2 looks
+# like a relapse (5 of 4 markers have some homologous alleles) and has a high
+# probability of being a relapse. However, the timing of BPD_562_2 suggests it's
+# a reinfection. Under the new model, the posterior deviates more from the
+# prior.

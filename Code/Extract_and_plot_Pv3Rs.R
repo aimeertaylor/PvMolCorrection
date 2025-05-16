@@ -50,12 +50,23 @@ save(Uniform_Pv3Rs, TimeToEvent_Pv3Rs, file = "../RData/marg_results_Pv3Rs.RData
 #===============================================================================
 # Plot estimates by study 
 #===============================================================================
+source("plot_VHXBPD_simplex.R") # Makes more sense to split by PMQ or not
 png(sprintf("../Figures/Pv3Rs_simplex.png"))
-source("plot_VHXBPD_simplex.R")
 Uniform_xy <- apply(Uniform_Pv3Rs, 1, function(x) project2D(x[1:3]))
 TimeToEvent_xy <- apply(TimeToEvent_Pv3Rs, 1, function(x) project2D(x[1:3]))
 Uniform_xy <- rbind(Uniform_xy, joint = Uniform_Pv3Rs[,"joint"])
 TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = TimeToEvent_Pv3Rs[,"joint"])
 plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
 dev.off()
+
+# Extract data and estimates for recurrences whose recurrent state probabilities 
+# could not be estimated using the prototype
+unestimatable <- c( "VHX_239_2","VHX_461_2","VHX_39_2","VHX_52_2","VHX_583_2","VHX_33_2")
+plot_VHXBPD_simplex(Uniform_xy[,unestimatable], TimeToEvent_xy[,unestimatable])
+Uniform_Pv3Rs[unestimatable,]
+TimeToEvent_Pv3Rs[unestimatable,]
+
+# Check the other episodes of 33:
+Uniform_Pv3Rs[grepl("VHX_33_", rownames(Uniform_Pv3Rs)),]
+
 
