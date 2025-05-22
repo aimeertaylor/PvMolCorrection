@@ -1,7 +1,8 @@
 ################################################################################
-# Pairwise probabilities: lower probability of recrudescence; half-sib problem  
+# Pairwise probabilities: lower probability of recrudescence; half-sib problem 
+# Needs sorting 
 ################################################################################
-
+rm(list = ls())
 library(Pv3Rs)
 load("../RData/results_Pv3Rs.RData")
 
@@ -14,10 +15,10 @@ load("../RData/results_Pv3Rs.RData")
 # misspecified given one more episode pairs.
 # ==============================================================================
 # Extract marginal probabilities
-Uniform_joint <- sapply(Uniform, function(x) x[[1]])
+Uniform_joint <- sapply(Uniform_joint, function(x) x[[1]])
 
 # Tag pids that were not analysed jointly
-log_NA <- sapply(Uniform, function(x) any(is.na(x[[1]])))
+log_NA <- sapply(Uniform_Pv3Rs, function(x) any(is.na(x[[1]])))
 
 # Remove pids that were not analysed jointly
 Uniform_joint <- Uniform_joint[!log_NA]
@@ -57,10 +58,10 @@ prob_big_diff
 # joint, which seems more reasonable
 # ==============================================================================
 # Extract marginal probabilities
-TimeToEvent_joint <- sapply(TimeToEvent, function(x) x[[1]])
+TimeToEvent_joint <- sapply(TimeToEvent_Pv3Rs, function(x) x[[1]])
 
 # Tag pids that were not analysed jointly
-log_NA <- sapply(TimeToEvent, function(x) any(is.na(x[[1]])))
+log_NA <- sapply(TimeToEvent_Pv3Rs, function(x) any(is.na(x[[1]])))
 
 # Remove pids that were not analysed jointly
 TimeToEvent_joint <- TimeToEvent_joint[!log_NA]

@@ -55,13 +55,13 @@ write.csv2(tab_MOIs[tab_MOIs$Total > 5 | tab_MOIs$Typed.episode.count > 3, ],
 # save as excel and take screen shot
 
 # Plot all paired data
-png("../Figures/paired_data.png")
+png("../Figures/data_paired.png")
 plot_data(ys = ys_VHX_BPD[names(which(typd_epi_count > 1))], fs = fs_VHX_BPD)
 dev.off()
 
 # Plot data for pids with a recurrence whose recurrent state probability could
 # not be estimated using the prototype
-png("../Figures/unestimatable_paired_data.png")
+png("../Figures/data_unestimatable.png")
 plot_data(ys = ys_VHX_BPD[c( "VHX_239","VHX_461","VHX_39","VHX_52","VHX_583","VHX_33")], fs = fs_VHX_BPD)
 dev.off()
 

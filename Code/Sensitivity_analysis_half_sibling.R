@@ -7,8 +7,8 @@ dev.off()
 Uniform_Pv3Rs[grepl("VHX_551_", rownames(Uniform_Pv3Rs)), ]
 Uniform_Pv3Rs[grepl("VHX_457_", rownames(Uniform_Pv3Rs)), ]
 
-VHX_532 (an example of half sibs with a high posterior relapse probability)
-BPD_45 (a rare example of a possible reinfection with data on nine markers)
+#VHX_532 (an example of half sibs with a high posterior relapse probability)
+#BPD_45 (a rare example of a possible reinfection with data on nine markers)
 "VHX_622", # Example of alternating relapses
 
 
