@@ -1,97 +1,103 @@
 ################################################################################
-# Pairwise probabilities: lower probability of recrudescence; half-sib problem 
-# Needs sorting 
+# Joint vs pairwise probabilities
 ################################################################################
 rm(list = ls())
-library(Pv3Rs)
+library(Pv3Rs) # For plot_data
 load("../RData/results_Pv3Rs.RData")
+big_diff <- 0.25 # probability difference considered large
+states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
+priors <- c("Uniform", "TimeToEvent")
+pids_big_diff <- list()
+eids_big_diff <- list()
+Figs <- TRUE
+
+if(Figs) png("../Figures/compare_joint_vs_pwise.png", 
+             width = 7, height = 10, units = "in", res = 300)
+par(mfcol = c(3,2))
+for(prior in priors) {
+  
+  # Load estimates
+  if(prior == "Uniform"){
+    joint <- Uniform_joint
+    pairwise <- Uniform_pairwise
+  } else {
+    joint <- TimeToEvent_joint
+    pairwise <- TimeToEvent_pairwise
+  }
+  
+  # Extract marginal probabilities
+  joint <- sapply(joint, function(x) x[[1]])
+  
+  # Tag pids that were not analysed jointly
+  log_NA <- sapply(joint, function(x) any(is.na(x[[1]])))
+  sum(log_NA) # Not modelled jointly 
+  
+  # Remove pids that were not analysed jointly
+  joint <- joint[!log_NA]
+  pwise <- pairwise[!log_NA]
+  
+  # Create matrices of estimates and summary features 
+  unlst_joint <- do.call(rbind, joint)
+  unlst_pwise <- do.call(rbind, pwise)
+  n_rec <- sapply(pwise, nrow) # Number of recurrences per pid
+  unlst_n_rec <- rep(n_rec, n_rec) # Number of recurrences per pid per rec
+  rownames(unlst_joint) <- rownames(unlst_pwise) <- # Add estimate IDs
+    unlist(sapply(names(n_rec), function(x) paste(x, 1:n_rec[x]+1, sep = "_")))
+  
+  # Check people with only one recurrence have more-or-less identical estimates
+  check <- max(unlst_joint[unlst_n_rec == 1,] - 
+                 unlst_pwise[unlst_n_rec == 1,]) < .Machine$double.eps^0.5
+  if(!check) stop("Discrepant estimates despite only one recurrence")
+  
+  # Plot estimates 
+  for(s in states){
+    
+    plot(x = unlst_joint[unlst_n_rec > 1, s], 
+         y = unlst_pwise[unlst_n_rec > 1, s], 
+         xlim = c(0,1), ylim = c(0,1),
+         ylab = "Pairwise", xlab = "Joint", pch = 20,
+         bty = "n", main = sprintf("%s: %s prior", names(which(states == s)), prior))
+    abline(a = 0, b = 1, lty = "dotted")
+    
+    # Extract and annotate big differences per recurrent state
+    diffs <- abs(unlst_joint[unlst_n_rec > 1, s] - unlst_pwise[unlst_n_rec > 1, s]) 
+    big_diffs <- names(diffs[which(diffs > big_diff)])
+    if(length(big_diffs) > 0) {
+      text(y = unlst_pwise[unlst_n_rec > 1, s][big_diffs], 
+           x = unlst_joint[unlst_n_rec > 1, s][big_diffs], 
+           labels = big_diffs, cex = 0.5,
+           pos = if(s == "I") c(3,1,3,4,4,2) else c(1,3,1,2,2,4))
+    }
+  } 
+  
+  # Get differences per recurrencee
+  big_diff_log <- apply(unlst_joint[unlst_n_rec > 1, ] - 
+                          unlst_pwise[unlst_n_rec > 1, ], 1, 
+                        function(x) any(abs(x) > big_diff))
+  
+  # Extract pids and eids for discrepant estimates
+  pids_big_diff[[prior]] <- rep(names(n_rec[n_rec > 1]), n_rec[n_rec > 1])[big_diff_log]
+  eids_big_diff[[prior]] <- names(big_diff_log)[big_diff_log]
+  
+  writeLines(sprintf("%s participants with data modelled jointly: %s recurrences
+%s participants with data modelled jointly and more than one recurrence: %s recurrences
+%s recurrences in %s people differ by more than %s percent probability", 
+                     sum(!log_NA), nrow(unlst_joint), 
+                     sum(n_rec > 1), sum(unlst_n_rec > 1),
+                     sum(big_diff_log), length(pids_big_diff),
+                     big_diff))
+  
+  # Discrepant estimates
+  print(unlst_joint[unique(unlist(eids_big_diff[prior])),, drop = F])
+  print(unlst_pwise[unique(unlist(eids_big_diff[prior])),, drop = F])
+}
+if(Figs) dev.off()
+
+# Data plot 
+if(Figs) png("../Figures/data_joint_vs_pwise.png", 
+             width = 7, height = 7, units = "in", res = 300) 
+plot_data(ys = ys_VHX_BPD[unique(unlist(pids_big_diff))], fs = fs_VHX_BPD)
+if(Figs) dev.off()
 
 
-# ==============================================================================
-# Uniform: 
-# Joint systematically has a slightly higher probability of recrudescence versus
-# relapse. When the model is misspecified due to half siblings, a large
-# difference between joint and pairwise estimates occurs if the model is not
-# misspecified given one more episode pairs.
-# ==============================================================================
-# Extract marginal probabilities
-Uniform_joint <- sapply(Uniform_joint, function(x) x[[1]])
-
-# Tag pids that were not analysed jointly
-log_NA <- sapply(Uniform_Pv3Rs, function(x) any(is.na(x[[1]])))
-
-# Remove pids that were not analysed jointly
-Uniform_joint <- Uniform_joint[!log_NA]
-Uniform_pwise <- Uniform_pairwise[!log_NA]
-
-# Create vectors of estimates and features for plotting
-unlst_uni_joint <- unlist(Uniform_joint)
-unlst_uni_pwise <- unlist(Uniform_pwise)
-n_rec <- sapply(Uniform_pwise, nrow) # Number of recurrences per pid
-unlst_n_rec <- rep(rep(n_rec, n_rec), each = 3)
-unlst_n_chr <- unlist(sapply(n_rec, function(x) rep(c("C","L","I"), each = x)))
-unlst_names <- rep(rep(names(n_rec), n_rec), each = 3) 
-
-# Plot discrepancy
-plot(unlst_uni_joint, unlst_uni_pwise, ylab = "Pairwise", xlab = "Joint",
-     col = unlst_n_rec, pch = unlst_n_chr, bty = "n")
-legend("left", legend = unique(n_rec), fill = unique(n_rec), bty = "n", 
-       title = "Recurrence \n count")
-abline(a = 0.23, b = 1, lty = "dashed")
-abline(a = -0.23, b = 1, lty = "dashed")
-abline(a = 0, b = 1, lty = "dashed")
-
-# Extract data and estimates for pid where joint and pairwise differ
-big_diff_log <- abs(unlst_uni_joint - unlst_uni_pwise) > 0.23
-pids_big_diff <- unique(unlst_names[big_diff_log])
-prob_big_diff <- sapply(pids_big_diff, function(pid) {
-  c(joint = unname(Uniform_joint[pid]), 
-    pairwise = unname(Uniform_pwise[pid]))}, simplify = F)
-
-# Inspect data and estimates where joint and pairwise differ
-plot_data(ys = ys_VHX_BPD[pids_big_diff], fs = fs_VHX_BPD)
-prob_big_diff
-
-
-# ==============================================================================
-# TimeToEvent: only one not-so-big (0.32) discrepency; lower relapse under
-# joint, which seems more reasonable
-# ==============================================================================
-# Extract marginal probabilities
-TimeToEvent_joint <- sapply(TimeToEvent_Pv3Rs, function(x) x[[1]])
-
-# Tag pids that were not analysed jointly
-log_NA <- sapply(TimeToEvent_Pv3Rs, function(x) any(is.na(x[[1]])))
-
-# Remove pids that were not analysed jointly
-TimeToEvent_joint <- TimeToEvent_joint[!log_NA]
-TimeToEvent_pwise <- TimeToEvent_pairwise[!log_NA]
-
-# Create vectors of estimates and features for plotting
-unlst_uni_joint <- unlist(TimeToEvent_joint)
-unlst_uni_pwise <- unlist(TimeToEvent_pwise)
-n_rec <- sapply(TimeToEvent_pwise, nrow) # Number of recurrences per pid
-unlst_n_rec <- rep(rep(n_rec, n_rec), each = 3)
-unlst_n_chr <- unlist(sapply(n_rec, function(x) rep(c("C","L","I"), each = x)))
-unlst_names <- rep(rep(names(n_rec), n_rec), each = 3) 
-
-# Plot discrepancy
-plot(unlst_uni_joint, unlst_uni_pwise, 
-     col = unlst_n_rec, pch = unlst_n_chr, bty = "n", ylab = "Pairwise", xlab = "Joint")
-legend("left", legend = unique(n_rec), fill = unique(n_rec), bty = "n", 
-       title = "Recurrence \n count")
-abline(a = 0.23, b = 1, lty = "dashed")
-abline(a = -0.23, b = 1, lty = "dashed")
-abline(a = 0, b = 1, lty = "dashed")
-
-# Extract data and estimates for pid where joint and pairwise differ
-big_diff_log <- abs(unlst_uni_joint - unlst_uni_pwise) > 0.23
-pids_big_diff <- unique(unlst_names[big_diff_log])
-prob_big_diff <- sapply(pids_big_diff, function(pid) {
-  c(joint = unname(TimeToEvent_joint[pid]), 
-    pairwise = unname(TimeToEvent_pwise[pid]))}, simplify = F)
-
-# Inspect data and estimates where joint and pairwise differ
-plot_data(ys = ys_VHX_BPD[pids_big_diff], fs = fs_VHX_BPD)
-prob_big_diff
 

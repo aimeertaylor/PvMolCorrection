@@ -54,7 +54,7 @@ save(Uniform_Pv3Rs, TimeToEvent_Pv3Rs, file = "../RData/marg_results_Pv3Rs.RData
 #===============================================================================
 # Plot estimates by PMQ received or not
 #===============================================================================
-png(sprintf("../Figures/simplex_Pv3Rs.png"))
+png("../Figures/simplex_Pv3Rs.png", width = 9, height = 9, units = "in", res = 300)
 Uniform_xy <- apply(Uniform_Pv3Rs, 1, function(x) project2D(x[1:3]))
 TimeToEvent_xy <- apply(TimeToEvent_Pv3Rs, 1, function(x) project2D(x[1:3]))
 Uniform_xy <- rbind(Uniform_xy, joint = Uniform_Pv3Rs[,"joint"])

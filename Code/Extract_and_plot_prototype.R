@@ -17,7 +17,7 @@ library(Pv3Rs)
 Figs <- TRUE
 states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
 par_default <- par()
-
+big_diff <- 0.25
 load("../RData/marg_results_Pv3Rs.RData") # Pv3R generated results
 path <- "~/Documents/RecurrentVivax/" # Path to old estimates
 load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples_Tagnostic.RData', path))
@@ -25,7 +25,9 @@ load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_
 load("../Rdata/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
 rownames(MS_final) <- MS_final[,"Episode_Identifier"]
 
+#===============================================================================
 # Sanity check that median values are the same across MS_final and thetas_9MS
+#===============================================================================
 all(MS_final[rownames(thetas_9MS), "C"] == thetas_9MS[,"C50%"], na.rm = T)
 all(MS_final[rownames(thetas_9MS), "L"] == thetas_9MS[,"L50%"], na.rm = T)
 all(MS_final[rownames(thetas_9MS), "I"] == thetas_9MS[,"I50%"], na.rm = T)
@@ -37,7 +39,8 @@ rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(MS_final)]
 #===============================================================================
 # Source function, project probabilities, add joint indicator, plot
 source("plot_VHXBPD_simplex.R") # Wrapper to avoid code duplication
-if(Figs) png("../Figures/simplex_prototype.png")
+if(Figs) png("../Figures/simplex_prototype.png",
+             width = 9, height = 9, units = "in", res = 300)
 na_log <- !is.na(thetas_9MS_Tagnostic$`C50%`) # Some entries have NA estimates
 Uniform_xy <- apply(thetas_9MS_Tagnostic[na_log, c("C50%", "L50%", "I50%")], 1, project2D)
 TimeToEvent_xy <- apply(MS_final[,c("C_median", "L_median", "I_median")], 1, project2D)
@@ -83,8 +86,9 @@ all(rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))
 rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))]
 # "VHX_239_2" "VHX_33_2"  "VHX_39_2"  "VHX_461_2" "VHX_52_2"  "VHX_583_2"
 
-if(Figs) png("../Figures/Pv3Rs_vs_prototype.png", width = 800)
-par(mfrow = c(2,3), mar = par_default$mar)
+if(Figs) png("../Figures/compare_Pv3Rs_vs_prototype.png", 
+             width = 7, height = 10, units = "in", res = 300)
+par(mfcol = c(3,2), mar = par_default$mar)
 for(s in states){
   
   plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype", 
@@ -104,7 +108,7 @@ for(s in states){
   # Extract and annotate big differences 
   diffs <- abs(MS_final[,sprintf("%s_median", s)] 
                - TimeToEvent_Pv3Rs[rownames(MS_final), s])
-  big_diffs_TimeToEvent <- rownames(MS_final)[which(diffs > 0.25)]
+  big_diffs_TimeToEvent <- rownames(MS_final)[which(diffs > big_diff)]
   if (length(big_diffs_TimeToEvent) > 0) {
     text(y = TimeToEvent_Pv3Rs[big_diffs_TimeToEvent, s], 
          x = MS_final[big_diffs_TimeToEvent, sprintf("%s_median", s)], 
@@ -133,10 +137,10 @@ for(s in states){
          y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
          pch = 20, cex = 0.5)
   
-  # Extract and annotate big differences 
+  # Extract and annotate big differences: 3 diffs are NA 
   diffs <- abs(thetas_9MS_Tagnostic[, paste0(s, "50%")] - 
                  Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s])
-  big_diffs_Uniform <- rownames(thetas_9MS_Tagnostic)[which(diffs > 0.25)]
+  big_diffs_Uniform <- rownames(thetas_9MS_Tagnostic)[which(diffs > big_diff)]
   if(length(big_diffs_Uniform) > 0) {
     text(y = Uniform_Pv3Rs[big_diffs_Uniform, s], 
          x = thetas_9MS_Tagnostic[big_diffs_Uniform, paste0(s, "50%")], 
@@ -156,6 +160,7 @@ pids_big_diffs_TimeToEvent <- apply(do.call(rbind, strsplit(big_diffs_TimeToEven
 pids_big_diffs_Uniform <- apply(do.call(rbind, strsplit(big_diffs_Uniform, split = "_"))[,1:2], 
                                     1, paste, collapse = "_")
 intersect(big_diffs_TimeToEvent, big_diffs_Uniform)
+unique(c(big_diffs_TimeToEvent, big_diffs_Uniform))
 
 
 # Plot data and inspect estimates for the participants with estimates that diffzer
@@ -184,7 +189,8 @@ Uniform_Pv3Rs[big_diffs_Uniform,] # BPD more reasonable; VHX: half sib missclass
 
 
 # Plot for ms
-png("../Figures/data_diffs.png")
+png("../Figures/data_Pv3Rs_vs_prototype.png",
+    width = 7, height = 7, units = "in", res = 300)
 plot_data(ys = ys_VHX_BPD[unique(c(pids_big_diffs_Uniform, 
                                    pids_big_diffs_TimeToEvent))], fs = fs_VHX_BPD)
 thetas_9MS_Tagnostic[big_diffs_Uniform, c("C50%", "L50%", "I50%")] 
