@@ -6,45 +6,29 @@
 # censored observations.
 #
 # Old results: 3% for BPD PQ treated (all BPD patients), 2.4% for VHX PQ
-# treated, 2.9% for BPD plus VHX PQ treated, based on median. We focus on BPD
-# only here, because VHX genetic-based estimates require paired-episode post-hoc
-# analysis. Specifically, 3.047353 for BPD computed on line 2008 of
-# Pooled_Analysis.Rmd, based on the median reinfection probability (see lines
-# 1791 and 1792)
+# treated, 2.9% for BPD plus VHX PQ treated, based on median. Specifically,
+# 3.047353 for BPD computed on line 2008 of Pooled_Analysis.Rmd, based on the
+# median reinfection probability (see lines 1791 and 1792).
 #
-# Run this after Compare_recurrent_state.R.
+# We focus on BPD only here, because VHX genetic-based estimates require
+# paired-episode post-hoc analysis. The code is based on Pooled_Analysis.Rmd but
+# it differs (see notes below). Run this after Compare_recurrent_state.R.
 #
-# This code is based on Pooled_Analysis.Rmd but it differs (see notes below).
-#
-# Could-do:
-# 1) Base new computation on median, with lower and upper credible intervals -
-# requires extra computations, which are computationally expensive.
-
-# Copied from Compare_recurrent_states.R (to sort)
-# # Within the old results, we can either compare to the median or the mean (they
-# are not equal - see plots below). Besides supplementary figure 9, almost all
-# figures and computations in Pooled_Analysis.Rmd and thus the Taylor&Watson
-# 2019 are based on the median. This includes the PQ failure rate computations.
-# The old median is used to internally check failure rate
-# computation. The old mean is then compared with the new mean - the new
-# median is computationally expensive to re-estimate, with a small return on
-# investment, especially if new estimates are not included in a manuscript. To
-# extract both median and mean estimates for Compute_PQ_failure_rates_new.R, I
-# thus loop over median and mean. This is suboptimal coding --- would have been
-# better to save both median and mean in Results_BPD --- but it does the job
-# (the time investment to optimise is non-negligible for a small return).
+# Because genetic data on BPD study participants were all analysed jointly under
+# the prototype, for BPD failure rate computations using the old results, we can
+# compute an estimate using both the old median and mean (they are not equal -
+# see plots in Extract_and_plot_prototype.R). Besides supplementary figure 9,
+# almost all figures and computations in Pooled_Analysis.Rmd and thus the
+# Taylor&Watson 2019 are based on the median. This includes the PQ failure rate
+# computations. The re-estimate based on the old median is used to internally
+# check failure rate computation. The re-estimate based on the old mean is
+# computed to see how old-median vs old-mean compares with old-median vs
+# new-mean. The statistical genetic focus of the re-analysis does not merit the
+# heavy computation required for a new median.
 # 
-# To ensure the only difference between new and old results is the updated
-# model, we use the old allele frequencies and compare new results with those
-# that were directly computed in Taylor & Watson et al. 2019. Those that were
-# directly computed in Taylor & Watson et al. 2019 exclude all those with data
-# on more than three episodes (default argument Max_Eps = 3 of function
-# post_prob_CLI). For three of nine patients whose data were analysed when
-# EXCLUDE_COMPLEX = F (the option to exclude these patients was set to aid
-# illustrative runs of the code), NAs were returned. That said, results
-# generated using the time-to-event posterior estimates as prior estimates also
-# differ because prior estimates plugged into the old model were un-normalised
-# but are normalised here.
+# Note that new results also differ to old ones because they use slightly
+# different allele frequencies, and the time-to-event posterior estimates
+# plugged into the prototype were un-normalised.
 ################################################################################
 rm(list = ls())
 
@@ -59,7 +43,7 @@ Combined_Time_Data_BPD$episodeid <- paste(Combined_Time_Data_BPD$patientid,
                                           Combined_Time_Data_BPD$episode, sep = "_")
 
 # Extract reinfection probabilities for all recurrences and censored rows.
-# N.B. censored rows have have pseudo episode numbers and "1" under censored.
+# N.B. censored rows have pseudo episode numbers and "1" under censored.
 Combined_Time_Data_BPD$I_old_median <- NA
 Combined_Time_Data_BPD$I_old_mean <- NA
 Combined_Time_Data_BPD$I_new <- NA
@@ -78,14 +62,14 @@ names(old_median) <- names(old_mean) <- rownames(thetas_9MS)
 # Load new results
 load("../RData/marg_results_Pv3Rs.RData") 
 
-if( !all(names(old_mean) == names(old_median)) ) stop ("Problem with eids")
+if(!all(names(old_mean) == names(old_median)) ) stop ("Problem with eids")
 Results_BPD <- data.frame(new = TimeToEvent_Pv3Rs[names(old_median),"I"], old_median, old_mean)
 rownames(Results_BPD) <- names(old_mean)
 
 # Load time-to-event only based estimates (used when genetic ones unavailable)
 # These are all posterior mean estimates (Pooled_Analysis.Rmd lines 672 and 1807)
 # N.B. prior_estimates.RData is generated by Compute_recurrent_states_new.R
-load("~/Dropbox/Vivax_VHXBPD_reanalysis/RData/prior_estimates.RData")
+load("../RData/prior_estimates.RData")
 # Check prior rownames are the same ahead of for loop below
 if (!all(rownames(prior_unnorm) == rownames(prior))) stop("prior rowname mismatch")
 
@@ -124,10 +108,6 @@ plot(x = Combined_Time_Data_BPD[No_recurrence_logs, "Time_to_event"],
      y = 1-prior[No_recurrence_eids, "I"])
 head(sort(1-prior[No_recurrence_eids, "I"], decreasing = T))
 
-
-which(rownames(Results_BPD) == eid)
-prior$I[which(rownames(prior) == eid)]
-
 # Create a per-patient summary data frame (remove episode-level summaries to
 # avoid confusion - should have done this in Pooled_Analysis.Rmd)
 BPD_patient_summaries = Combined_Time_Data_BPD[!duplicated(Combined_Time_Data_BPD$patientid),
@@ -160,11 +140,11 @@ P_Failure_new = 100*sum(BPD_patient_summaries$Failure_new, na.rm = T)/nrow(BPD_p
 
 # New mean estimates give the same failure rate as old median estimates: new
 # model just not change the scientific conclusion of Taylor&Watson et al. 2019
-writeLines(sprintf('The PQ failure rate using the old median estimates is %s%% in %s individuals',
+writeLines(sprintf('The PQ failure rate re-estimated using the old median estimates is %s%% in %s individuals',
                    round(P_Failure_old_median, 6), nrow(BPD_patient_summaries)))
-writeLines(sprintf('The PQ failure rate using the old mean estimates is %s%% in %s individuals',
+writeLines(sprintf('The PQ failure rate estimated using the old mean estimates is %s%% in %s individuals',
                    round(P_Failure_old_mean, 6), nrow(BPD_patient_summaries)))
-writeLines(sprintf('The PQ failure rate using the new genetic model is %s%% in %s individuals',
+writeLines(sprintf('The PQ failure rate estimated using the new genetic model is %s%% in %s individuals',
                    round(P_Failure_new, 6), nrow(BPD_patient_summaries)))
 
 # ==============================================================================
