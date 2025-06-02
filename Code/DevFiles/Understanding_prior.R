@@ -1,25 +1,25 @@
 ################################################################################
 # When writing Compute_results_new.R, I noticed that the prior estimates plugged
 # into the genetic model (i.e., the time-to-event posterior means) do not sum to
-# one and, based on re-inspection of post_prob_CLI, these unnormalised estimates
-# were used to compute the old results, because post_prob_CLI only checks
-# summation to one before taking logs if p_pop_ind = TRUE. As such, I saved the
-# unnormalised and normalised prior estimates for further interrogation here.
-#
-# In summary, the differences are small (for reinfection, at most 0.00015 in
-# absolute terms and 0.2% in relative terms) so they likely have little effect.
+# one and, based on re-inspection of post_prob_CLI, these un-normalised
+# estimates were used to compute the results in Taylor & Watson 2019 because
+# post_prob_CLI only checks summation to one before taking logs if p_pop_ind =
+# TRUE. As such, I saved the un-normalised and normalised prior estimates for
+# further interrogation here. However, the differences are very small (for
+# reinfection, at most 0.00015 in absolute terms and 0.2% in relative terms) so
+# they likely have little effect.
 ################################################################################
 rm(list = ls())
 library(Pv3Rs)
 
 # Load prior estimates 
-load("~/Dropbox/Vivax_VHXBPD_reanalysis/RData/prior_estimates.RData")
+load("../../RData/prior_estimates.RData")
 
-# Load results_new to get the episode IDs for genetic-based posterior estimates
-load("~/Dropbox/Vivax_VHXBPD_reanalysis/RData/results_new.RData")
-epIDs <- rownames(do.call(rbind, sapply(results_TimeToEvent, function(x) x["marg"])))
+# Get episode IDs for episodes with genetic-data (ys_VHX_BPD includes some unpaired data)
+load("../../RData/marg_results_Pv3Rs.RData")
+epIDs <- rownames(TimeToEvent_Pv3Rs)
 
-# Trim priors to only episodes with genetic-based posterior estimates
+# Trim priors to only episodes with genetic data
 prior <- prior[epIDs, ]
 prior_unnorm <- prior_unnorm[epIDs, ]
 

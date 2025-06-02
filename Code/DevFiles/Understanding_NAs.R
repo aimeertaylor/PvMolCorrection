@@ -32,3 +32,4 @@ range(within_episode_allele_counts)
 
 # Example 
 MS_pooled_example <- MS_pooled_byepisode$VHX_225_3
+MS_pooled_example
