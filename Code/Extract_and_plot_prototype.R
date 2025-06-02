@@ -189,7 +189,7 @@ Uniform_Pv3Rs[big_diffs_Uniform,] # BPD more reasonable; VHX: half sib missclass
 
 
 # Plot for ms
-png("../Figures/data_Pv3Rs_vs_prototype.png",
+if(Figs) png("../Figures/data_Pv3Rs_vs_prototype.png",
     width = 7, height = 7, units = "in", res = 300)
 plot_data(ys = ys_VHX_BPD[unique(c(pids_big_diffs_Uniform, 
                                    pids_big_diffs_TimeToEvent))], fs = fs_VHX_BPD)
