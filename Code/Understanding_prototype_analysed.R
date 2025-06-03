@@ -29,7 +29,7 @@
 ################################################################################
 
 # Set up
-load("../../RData/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
+load("../RData/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
 any(is.na(MS_final$L_median)) # MS_final doesn't contain any entries with NA estimates
 
 # Load original genetic data 

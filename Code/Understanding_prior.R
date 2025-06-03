@@ -12,11 +12,11 @@
 rm(list = ls())
 
 # Get episode IDs for episodes with genetic-based estimates
-load("../../RData/marg_results_Pv3Rs.RData")
+load("../RData/marg_results_Pv3Rs.RData")
 epIDs <- rownames(TimeToEvent_Pv3Rs)
 
 # Load and trim priors to only episodes with genetic-based estimates
-load("../../RData/prior_estimates.RData")
+load("../RData/prior_estimates.RData")
 prior <- prior[epIDs, ]
 prior_unnorm <- prior_unnorm[epIDs, ]
 
