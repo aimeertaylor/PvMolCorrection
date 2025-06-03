@@ -6,7 +6,7 @@ list(list = ls())
 library(Pv3Rs) # For plots
 
 # Load data from all participants to extract meta data
-load("../RData/Combined_Time_Event.RData") # From RecurrentVivax/RData/TimingModel/
+load("../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/Combined_Time_Event.RData") 
 
 # Episode counts and treatment for all participant IDs inc. those whose episodes were not typed
 epi_counts <- sapply(split(Combined_Time_Data$episode[Combined_Time_Data$Censored != 1], 

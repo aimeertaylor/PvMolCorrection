@@ -33,7 +33,7 @@ Figs <- TRUE
 load("../RData/marg_results_Pv3Rs.RData") 
 
 # Load VHX and BPD pooled non-genetic data set and convert to data frame
-load('~/Documents/RecurrentVivax/RData/TimingModel/Combined_Time_Event.RData')
+load('../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/Combined_Time_Event.RData')
 
 # Remove enrolment episodes, add episode ids
 Combined_Time_Data <- as.data.frame(Combined_Time_Data)
@@ -52,8 +52,8 @@ load("../Rdata/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
 rownames(MS_final) <- MS_final[,"Episode_Identifier"]
 
 # Load genetic-based median and mean estimates for for all analysed jointly by prototype
-path <- "~/Documents/RecurrentVivax" # Path to old estimates
-load(sprintf('%s/RData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples.RData', path))
+path <- "../jwatowatson-RecurrentVivax-4870715/" # Path to old estimates
+load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples.RData', path))
 # NB that theta_9MS contains rows for pids with NA estimates: 
 rownames(thetas_9MS)[which(!rownames(thetas_9MS) %in% rownames(MS_final))]
 thetas_9MS[which(!rownames(thetas_9MS) %in% rownames(MS_final)),]

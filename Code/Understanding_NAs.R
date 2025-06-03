@@ -5,7 +5,7 @@
 rm(list = ls())
 
 # Genetic data (MS_pooled)
-load('~/Documents/RecurrentVivax/RData/GeneticModel/MS_data_PooledAnalysis.RData') 
+load('../jwatowatson-RecurrentVivax-4870715/RData/GeneticModel/MS_data_PooledAnalysis.RData') 
 
 # Marker names
 MSs_all <- tail(names(MS_pooled), 9) 

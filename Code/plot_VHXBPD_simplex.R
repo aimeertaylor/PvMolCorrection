@@ -1,6 +1,5 @@
 plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
   
-  
   # Get treatment info from Combined_Time data because MS_final doesn't contain
   # episode identifiers for 6 recurrences that could not be estimated
   load("../RData/Combined_Time_Event.RData")

@@ -33,7 +33,7 @@ load("../RData/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
 any(is.na(MS_final$L_median)) # MS_final doesn't contain any entries with NA estimates
 
 # Load original genetic data 
-load("~/Documents/RecurrentVivax/RData/GeneticModel/MS_data_PooledAnalysis.RData")
+load("../jwatowatson-RecurrentVivax-4870715/RData/GeneticModel/MS_data_PooledAnalysis.RData")
 
 # Generate a table of MOIs: sufficient statistic for feasibility of estimation
 max_epi_count <- max(MS_pooled$Episode) # Possibly overlooks episodes without genetic data
@@ -85,7 +85,7 @@ tab_MOIs[c("VHX_33", "VHX_583"),] # First-second pairwise analysis exceeds 6 gen
 # When EXCLUDE_COMPLEX = F, NAs are returned for data on VHX_239 VHX_461 and
 # VHX_52 (complexity_problem > UpperComplexity = 10^6); estimates are computed
 # for "VHX_16"  "VHX_225" "VHX_33" "VHX_551" "VHX_583" "VHX_646"
-load('~/Documents/RecurrentVivax/RData/UpperComplexityIDs.RData')
+load('../jwatowatson-RecurrentVivax-4870715/RData/UpperComplexityIDs.RData')
 UpperComplexityIDs[UpperComplexityIDs %in% MS_final$ID] # 6 of the UpperComplexityIDs
 tab_MOIs[UpperComplexityIDs[UpperComplexityIDs %in% MS_final$ID],]
 

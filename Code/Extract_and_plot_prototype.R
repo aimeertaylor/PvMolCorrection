@@ -19,7 +19,7 @@ states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
 par_default <- par()
 big_diff <- 0.25
 load("../RData/marg_results_Pv3Rs.RData") # Pv3R generated results
-path <- "~/Documents/RecurrentVivax/" # Path to old estimates
+path <- "../jwatowatson-RecurrentVivax-4870715/" # Path to old estimates
 load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples_Tagnostic.RData', path))
 load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples.RData', path))
 load("../Rdata/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")

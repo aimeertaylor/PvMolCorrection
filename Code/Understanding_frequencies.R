@@ -20,7 +20,7 @@
 rm(list = ls())
 
 # Old allele frequencies: FS_combined
-load('~/Documents/RecurrentVivax/RData/Data_for_relatedness.RData')
+load('../jwatowatson-RecurrentVivax-4870715/RData/Data_for_relatedness.RData')
 
 # Compare old and fs_VHX_BPD: doesn't appear to be any systematic bias consistent with
 # most samples being reinfections/relapses not subject to any systematic
