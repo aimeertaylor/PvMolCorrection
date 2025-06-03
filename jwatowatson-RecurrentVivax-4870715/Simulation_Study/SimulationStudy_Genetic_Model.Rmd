@@ -1,0 +1,875 @@
+---
+title: "Simulation study for the genetic model"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+    keep_md: yes
+header-includes: \usepackage{float}
+---
+
+<!-- Nine individuals from the VHX and BPD datasets were deemed to have data too complex to analyse under the model. They received drugs XXX. All nine individuals appear to have had multiple relapses, based on data visualization, which can be used to rapidly identify clonally compatible phases, where computational methods fail (Figure XXX). -->
+
+In this script, simulated genetic data are generated and plotted, and the results of the genetic model applied to those data are loaded and plotted. The simulated data are analysed under the model in a separate script called Generate_GenSimResults.R. This script relies on BuildSimData.R, a function that for a set of input parameters generates data for a graph over an initial episode and single recurrence. The graph contains a single between-episode edge representing a parasite haploid genotype with specified relationship in stranger, sibling or clone, which is among otherwise unrelated 'stranger' parasites if the input complexity of infections (COIs) exceed one. We chose this type of graph, in which the `noisy' parasite haploid genotypes are unrelated since it is the most diverse thus most computationally challenging. In other words, it is a extreme scenario which is used to bound the performance of the model. Indeed, some of the problems we encounter in this extreme scenario do not apply to the real data. Complex infections in the real data most likely derive from either relapsing or co-inoculated parasites (there is little opportunity for superinfection due to active follow up), and thus are liable to be interrelated, therefore less diverse.  
+
+Outline of this script:  
+
+* For each "job", simulate data for N individuals, with M = 3 to 12 markers for two episodes, the second episode including a single clonal, sibling or stranger parasite. We consider several jobs: for each of the stranger, sibling and clonal scenario, we simulated data for an initial and recurrent infection with respective COIs: 1 and 1, with and without error; 2 and 1, with and without error; 1 and 2, with and without error; 3 and 1, without error. For the non-erroneous episodes with COIs of 1 and 2, we explored cardinalities of 4 (the minimum effective cardinality of any marker in the MS data that feature in the main text) and 13 (the mean effective cardinality of the MS data that feature in the main text). For the erroneous data and for the episodes with COIs of 3 and 1 cardinality was 13. 
+* Summarize the simulated data with a series of plots. 
+* Compute resulting recurrence state estimates (this is currently done in a separate file). 
+* Plot resulting recurrence state estimates as a function M.
+
+
+```{r, echo=FALSE, include=F}
+knitr::opts_chunk$set(cache = TRUE, cache.comments = FALSE, 
+                      echo = TRUE, include = TRUE, 
+                      fig.width = 7, fig.height = 7,
+                      fig.pos = 'H', 
+                      dev = 'png', dpi = 300)
+
+rm(list = ls())
+load('../RData/RPackages_List.RData')
+new.pkg <- pkgs[!(pkgs %in% installed.packages()[, "Package"])]
+if(length(new.pkg) > 0){ # Install using .R script
+  stop('Please run the script Install_and_load_required_packages.R before returning to this script. Thanks.')}else{
+    sapply(pkgs, require, character.only = TRUE) # Load all packages
+  }
+
+```
+
+```{r, echo=FALSE}
+source('../Genetic_Model/iGraph_functions.R')
+source('../Genetic_Model/Likelihood_function.R')
+source('../Genetic_Model/Data_functions.R')
+source('../Genetic_Model/test_Rn_compatible.R')
+source('../Genetic_Model/post_prob_CLI.R')
+source('../Genetic_Model/hap_combinations_functions.R')
+source('./BuildSimData.R')
+```
+
+```{r, echo=FALSE}
+SIM_DATA = F # Simulation 1: inference as a function of marker count
+SIM_DATA_ERROR = F # Simulation 2: effect of error on inference 
+SIM_DATA_COIs3_1 = F # Simulation 3: considering the effect of COI on inference
+PLOT_RESULTS = T
+```
+
+```{r, echo=FALSE}
+set.seed(1) # For reproducibility
+N_indivs = 250 # Number of individuals, each with a single recurrence
+cardinalities = c(4,13) # Marker cardinalities (set to match min and mean of the MS panel)
+Ms = seq(3,12,3) # Number of MS markers
+COIs_1 = c(1,2) # COIs of primary episode 
+COIs_2 = c(1,2) # COIs of recurrent episode
+relationships = c('Sibling','Stranger','Clone') # Relationships of parasite
+COI_c_max = 3 # Maximum COI we currently consider for core jobs
+
+# Enumerate all combinations of COI complexity and numbers of markers
+settings = expand.grid(Ms = Ms, COI_1 = COIs_1, COI_2 = COIs_2) # Enumerate all possible combinations of COIs and markers 
+settings = settings[settings$COI_1+settings$COI_2<=COI_c_max,] # Remove any with cumulative COI greater than COI_c_max
+settings = rbind(settings, expand.grid(Ms = Ms, COI_1 = 3, COI_2 = 1)) # Add settings for an additional 3_1 example
+settings$COI_pattern <- paste(settings$COI_1, settings$COI_2, sep = "_") # Store the COIs as a pattern
+rownames(settings) = NULL
+jobs_cor = which(settings$COI_pattern != '3_1') # Indices of core simulation jobs
+jobs_add = which(settings$COI_pattern == '3_1') # Indices of addn simulation jobs
+
+## Threshold for classification and pink band
+Epsilon_upper = 0.7
+Epsilon_lower = 0.3
+Dark2 = brewer.pal(8, 'Dark2')
+transparent_pink_band = adjustcolor(Dark2[4], alpha.f = 0.2)
+```
+
+```{r, echo=FALSE}
+if(SIM_DATA){ # Simulate data for core jobs with cardinalities 4 and 13
+  for(cardinality in cardinalities){ # iterate over cardinality of markers
+    for(relationship in relationships){ # iterative over simulation scenario 
+      
+      thetas_all = foreach(job = jobs_cor, .combine = rbind, # iterate over jobs parameter settings
+                           .packages = c('dplyr','Matrix','gtools','igraph','matrixStats','doParallel')
+                           
+      ) %do% { # parallisation happening inside the function
+        
+        #####################################################
+        # Simulate and save MS data
+        #####################################################
+        sim_output = BuildSimData(COIs = c(settings$COI_1[job],  # COI from settings
+                                           settings$COI_2[job]), # COI from settings
+                                  M = settings$M[job], # Number of markers from settings 
+                                  N = N_indivs, # Number of individuals
+                                  N_alleles = cardinality, 
+                                  relationship = relationship)
+        
+        # Save a copy of the simulated data 
+        save(sim_output, file=sprintf('SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality%s_M%s_COIs%s_%s.RData', 
+                                      cardinality, settings$M[job], settings$COI_pattern[job], relationship))
+      }
+    }
+  }
+}
+```
+
+```{r, echo=FALSE}
+if(SIM_DATA_ERROR){ # Simulate erroneous data for cor jobs with cardinality 13 only
+  
+  error_prob = 0.20 # Unreasonably high in biological terms, but reasonable high for highlighting model behaviour
+  error_probs = c(error_prob*0.1, # Assumes a fixed rate for all motif sizes, but with some +/- 1 or 2 behaviour
+                  error_prob*0.4, 
+                  1-error_prob, 
+                  error_prob*0.4, 
+                  error_prob*0.1)
+  sum(error_probs) # Check sums to one
+  
+  for(relationship in relationships){ # iterate over simulation scenario 
+    for(job in jobs_cor){
+      
+      # load data
+      load(sprintf('./SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality13_M%s_COIs%s_%s.RData', 
+                   settings$M[job], settings$COI_pattern[job], relationship))
+      
+      # Add error
+      MSs = names(sim_output$FS)
+      data_dim = dim(sim_output$MS_data_sim[, MSs, drop = FALSE])
+      errors = sample(-2:2, size = prod(data_dim), prob = error_probs, replace = T)
+      MSdata_with_error = sim_output$MS_data_sim[, MSs, drop = FALSE] + array(errors, dim = data_dim)
+      sim_output$MS_data_sim[, MSs] = MSdata_with_error
+      
+      # save a copy of the erronenous data
+      save(sim_output, file = sprintf('./SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality13_M%s_COIs%s_%s_Error.RData', 
+                                      settings$M[job], settings$COI_pattern[job], relationship))
+    }
+  }
+}
+```
+
+```{r, echo=FALSE}
+if(SIM_DATA_COIs3_1){ # Simulate data for additional jobs with cardinality 13 only
+  for(relationship in relationships){ # iterate over simulation scenario 
+    
+    thetas_all = foreach(job = jobs_add, .combine = rbind, # iterate over jobs parameter settings
+                         .packages = c('dplyr','Matrix','gtools','igraph','matrixStats','doParallel')
+                         
+    ) %do% { # parallisation happening inside the function
+      
+      #####################################################
+      # Simulate and save MS data
+      #####################################################
+      sim_output = BuildSimData(COIs = c(settings$COI_1[job],  # COI from settings
+                                         settings$COI_2[job]), # COI from settings
+                                M = settings$M[job], # Number of markers from settings 
+                                N = N_indivs, # Number of individuals
+                                N_alleles = 13, 
+                                relationship = relationship)
+      
+      # Save a copy of the simulated data
+      save(sim_output, file=sprintf('SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality13_M%s_COIs%s_%s.RData', 
+                                    settings$M[job], settings$COI_pattern[job], relationship))
+    }
+  }
+}
+```
+
+```{r, echo = FALSE}
+# Now let's summarise the well-specified simulated core data in terms of 
+# fraction evidence IBS (one number per episode pair)
+# fraction heteroallic (one number per episode)
+if(SIM_DATA){
+  for(cardinality in cardinalities){ # iterate over cardinality of markers
+    for(relationship in relationships){ # iterate over simulation scenario 
+      
+      
+      Data_summaries = lapply(jobs_cor, function(job){
+        
+        load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality%s_M%s_COIs%s_%s.RData', 
+                     cardinality, settings$M[job], settings$COI_pattern[job], relationship))
+        attach(sim_output, warn.conflicts = F)
+        MSnames = paste0('MS',1:settings$M[job],sep = '') # Reconstruct microsatellite names
+        
+        # Summarize data in terms of fraction of evidence IBS (one number per episode pair)
+        # and fraction heteroallic (one number per episode)
+        Data_summary = ddply(MS_data_sim, 'ID', .fun = function(x){ # separate data for each individual
+          
+          # Separate data by episode
+          Z = dlply(x, 'Episode') 
+          
+          # For each intra-individual comparison, reported fraction IBS
+          fraction_evidence_IBS = mean(sapply(MSnames, function(MSname){
+            any(Z[[1]][,MSname] %in% Z[[2]][,MSname]) # Any overlap counts as evidence
+          }))
+          
+          # For each episode (rows) and markers (cols) report if call is heteroallelic
+          heteroallelic_calls = sapply(MSnames, function(MSname){
+            het_per_epi_given_MS = c(length(unique(Z[[1]][,MSname])) > 1, # First episode 
+                                     length(unique(Z[[2]][,MSname])) > 1) # Second episode
+          })
+          
+          # For each episode, report fraction of heteroallelic calls
+          fraction_heteroallelic = rowMeans(heteroallelic_calls)
+          names(fraction_heteroallelic) = c('frac_het_epi1', 'frac_het_epi2')
+          
+          # For each individual, reported fraction evidence IBS and het calls per episode
+          c(frac_evi_IBS = fraction_evidence_IBS, fraction_heteroallelic)
+        }) 
+      })
+      save(Data_summaries, file=sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s.RData', 
+                                        cardinality, relationship))
+    }
+  }
+}
+```
+
+```{r, echo = FALSE}
+# Now let's summarise the erroneous simulated core data in terms of 
+# fraction evidence IBS (one number per episode pair)
+# fraction heteroallic (one number per episode)
+if(SIM_DATA_ERROR){
+  for(cardinality in 13){ # iterate over cardinality of markers
+    for(relationship in relationships){ # iterate over simulation scenario 
+    
+      Data_summaries = lapply(jobs_cor, function(job){
+        
+        load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality%s_M%s_COIs%s_%s_Error.RData', 
+                     cardinality, settings$M[job], settings$COI_pattern[job], relationship))
+        attach(sim_output, warn.conflicts = F)
+        MSnames = paste0('MS',1:settings$M[job],sep = '') # Reconstruct microsatellite names
+        
+        # Summarize data in terms of fraction of evidence IBS (one number per episode pair)
+        # and fraction heteroallic (one number per episode)
+        Data_summary = ddply(MS_data_sim, 'ID', .fun = function(x){ # separate data for each individual
+          
+          # Separate data by episode
+          Z = dlply(x, 'Episode') 
+          
+          # For each intra-individual comparison, reported fraction IBS
+          fraction_evidence_IBS = mean(sapply(MSnames, function(MSname){
+            any(Z[[1]][,MSname] %in% Z[[2]][,MSname]) # Any overlap counts as evidence
+          }))
+          
+          # For each episode (rows) and markers (cols) report if call is heteroallelic
+          heteroallelic_calls = sapply(MSnames, function(MSname){
+            het_per_epi_given_MS = c(length(unique(Z[[1]][,MSname])) > 1, # First episode 
+                                     length(unique(Z[[2]][,MSname])) > 1) # Second episode
+          })
+          
+          # For each episode, report fraction of heteroallelic calls
+          fraction_heteroallelic = rowMeans(heteroallelic_calls)
+          names(fraction_heteroallelic) = c('frac_het_epi1', 'frac_het_epi2')
+          
+          # For each individual, reported fraction evidence IBS and het calls per episode
+          c(frac_evi_IBS = fraction_evidence_IBS, fraction_heteroallelic)
+        }) 
+      })
+      save(Data_summaries, file=sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s_Error.RData', 
+                                        cardinality, relationship))
+    }
+  }
+}
+```
+
+
+```{r, echo = FALSE}
+# Now let's summarise the well-specified simulated add data in terms of 
+# fraction evidence IBS (one number per episode pair)
+# fraction heteroallic (one number per episode)
+if(SIM_DATA_COIs3_1){
+  for(cardinality in 13){ # iterate over cardinality of markers
+    for(relationship in relationships){ # iterate over simulation scenario 
+      
+      Data_summaries = lapply(jobs_add, function(job){
+        
+        load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_Data_Cardinality%s_M%s_COIs%s_%s.RData', 
+                     cardinality, settings$M[job], settings$COI_pattern[job], relationship))
+        attach(sim_output, warn.conflicts = F)
+        MSnames = paste0('MS',1:settings$M[job],sep = '') # Reconstruct microsatellite names
+        
+        # Summarize data in terms of fraction of evidence IBS (one number per episode pair)
+        # and fraction heteroallic (one number per episode)
+        Data_summary = ddply(MS_data_sim, 'ID', .fun = function(x){ # separate data for each individual
+          
+          # Separate data by episode
+          Z = dlply(x, 'Episode') 
+          
+          # For each intra-individual comparison, reported fraction IBS
+          fraction_evidence_IBS = mean(sapply(MSnames, function(MSname){
+            any(Z[[1]][,MSname] %in% Z[[2]][,MSname]) # Any overlap counts as evidence
+          }))
+          
+          # For each episode (rows) and markers (cols) report if call is heteroallelic
+          heteroallelic_calls = sapply(MSnames, function(MSname){
+            het_per_epi_given_MS = c(length(unique(Z[[1]][,MSname])) > 1, # First episode 
+                                     length(unique(Z[[2]][,MSname])) > 1) # Second episode
+          })
+          
+          # For each episode, report fraction of heteroallelic calls
+          fraction_heteroallelic = rowMeans(heteroallelic_calls)
+          names(fraction_heteroallelic) = c('frac_het_epi1', 'frac_het_epi2')
+          
+          # For each individual, reported fraction evidence IBS and het calls per episode
+          c(frac_evi_IBS = fraction_evidence_IBS, fraction_heteroallelic)
+        }) 
+      })
+      save(Data_summaries, file=sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s_3_1.RData', 
+                                        cardinality, relationship))
+    }
+  }
+}
+```
+
+
+
+## Fraction of markers at which evidence of IBS is detected
+
+Figures \ref{fig: fraction IBS} and \ref{fig: fraction IBS} show the fraction of markers at which evidence of IBS is detected for non-erroneous and erroneous data, respectively. When the recurrent episode contains a clone of a parasite haploid genotype in the initial episode and the data are non-erroneous (as they are in Figure \ref{fig: fraction IBS}), the fraction of markers at which evidence of IBS is detected is always one. We thus do not plot the clonal scenario for non-erroneous data. On average, the mean fractions (vertical colored bars) range from approximately 0.1 under the stranger scenario with high cardinality (erroneous and not), to above 0.6 under the sibling scenario with lower cardinality (non-erroneous) and above 0.6 under the clonal scenario with higher cardinality (erroneous). 
+
+
+```{r fraction_IBS, fig.height = 10, fig.width = 24, echo = FALSE, fig.cap="\\label{fig: fraction IBS}The fraction of markers at which evidence of IBS is detected when the recurrent episode is compared with the initial episode: non-erroneous data. Vertical coloured bars denote mean fractions. Different colours represent results for different numbers of markers, $m$."}
+#=============================================================
+# Visualize summarised data fraction IBS for sib and stranger
+# (evidence of IBS is always one for clone when no error)
+# Non-erroneous data 
+#=============================================================
+par(mfrow = c(3,6))
+for(cardinality in cardinalities){
+for(relationship in c("Sibling", "Stranger")){ 
+    
+    load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s.RData', cardinality, relationship))
+    
+    # Distribution of IBS (for a given relationship, cardinality, COI pattern, they should be approximately the same)
+    fracs_evi_IBS = sapply(Data_summaries, function(x){x$frac_evi_IBS})
+    colnames(fracs_evi_IBS) = apply(settings[jobs_cor,], 1, function(x) paste(as.numeric(x[1]), x[2], x[3], collapse = ''))
+    require(RColorBrewer)
+    cols = sapply(brewer.pal(length(Ms), 'GnBu'), adjustcolor, alpha.f = 1) # Adjust col if hist
+    names(cols)= Ms
+    
+    cs = c(0,0) 
+    for(j in 1:ncol(fracs_evi_IBS)){
+      pars = unlist(strsplit(colnames(fracs_evi_IBS)[j], split = ' '))
+      if(all(pars[2:3] == cs)){ADD = T}else{ADD = F} 
+      
+      # As histogram: a bit too messy
+      # hist(fracs_evi_IBS[,j], xlim = c(0,1), col = cols[pars[1]], las = 1, add = ADD, breaks = 20, 
+      #      main = bquote(italic(c)^(1)==.(pars[2])~"  "~italic(c)^(2)==.(pars[3])), 
+      #      xlab = 'Fraction of evidence of IBS',
+      #      ylab = 'Number of epsisode pairs')
+      
+      # As density
+      if(!all(pars[2:3] == cs)){ 
+        dens = density(fracs_evi_IBS[,j])
+        plot(dens, xlim = c(0,1), type = 'l', ylim = c(0,2*max(dens$y)), bty = 'n', 
+             col = cols[pars[1]], xlab = 'Fraction with IBS evidence', las = 1, 
+             main = sprintf("Cardinality: %s; Scenario: %s", cardinality, relationship))
+        title(main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])), line = -1)
+      } else {
+        lines(density(fracs_evi_IBS[,j]), col = cols[pars[1]])
+      }
+      
+      abline(v = mean(fracs_evi_IBS[,j]), col = cols[pars[1]])
+      legend('topleft', lty = 1, col = cols, legend = names(cols), 
+             inset = 0.025, cex = 1, title = expression(italic(m)))
+      cs = pars[2:3]
+    }
+  }
+}
+
+# Add the additional 3 1 data sets summaries
+for(relationship in c("Sibling", "Stranger")){ 
+  for(cardinality in 13){
+    
+    load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s_3_1.RData', cardinality, relationship))
+    
+    # Distribution of IBS (for a given relationship, cardinality, COI pattern, they should be approximately the same)
+    fracs_evi_IBS = sapply(Data_summaries, function(x){x$frac_evi_IBS})
+    colnames(fracs_evi_IBS) = apply(settings[jobs_add,], 1, function(x) paste(as.numeric(x[1]), x[2], x[3], collapse = ''))
+    require(RColorBrewer)
+    cols = sapply(brewer.pal(length(Ms), 'GnBu'), adjustcolor, alpha.f = 1) # Adjust col if hist
+    names(cols)= Ms
+    
+    cs = c(0,0) 
+    for(j in 1:ncol(fracs_evi_IBS)){
+      pars = unlist(strsplit(colnames(fracs_evi_IBS)[j], split = ' '))
+      if(all(pars[2:3] == cs)){ADD = T}else{ADD = F} 
+      
+      # As histogram: a bit too messy
+      # hist(fracs_evi_IBS[,j], xlim = c(0,1), col = cols[pars[1]], las = 1, add = ADD, breaks = 20, 
+      #      main = bquote(italic(c)^(1)==.(pars[2])~"  "~italic(c)^(2)==.(pars[3])), 
+      #      xlab = 'Fraction of evidence of IBS',
+      #      ylab = 'Number of epsisode pairs')
+      
+      # As density
+      if(!all(pars[2:3] == cs)){ 
+        dens = density(fracs_evi_IBS[,j])
+        plot(dens, xlim = c(0,1), type = 'l', ylim = c(0,2*max(dens$y)), bty = 'n', 
+             col = cols[pars[1]], xlab = 'Fraction with IBS evidence', las = 1, 
+             main = sprintf("Cardinality: %s; Scenario: %s", cardinality, relationship))
+        title(main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])), line = -1)
+      } else {
+        lines(density(fracs_evi_IBS[,j]), col = cols[pars[1]])
+      }
+      
+      abline(v = mean(fracs_evi_IBS[,j]), col = cols[pars[1]])
+      legend('topleft', lty = 1, col = cols, legend = names(cols), 
+             inset = 0.025, cex = 1, title = expression(italic(m)))
+      cs = pars[2:3]
+    }
+  }
+}
+```
+
+```{r fraction_IBS_erroneous, fig.height = 10, fig.width = 10, echo = FALSE, fig.cap="\\label{fig: fraction IBS erroneous}The fraction of markers at which evidence of IBS is detected when the recurrent episode is compared with the initial episode: erroneous data. Vertical coloured bars denote mean fractions. Different colours represent results for different numbers of markers, $m$."}
+#=============================================================
+# Visualize summarised data fraction IBS for sib and stranger
+# (evidence of IBS is always one for clone when no error)
+# Non-erroneous data 
+#=============================================================
+par(mfrow = c(3,3))
+for(relationship in relationships){ 
+  for(cardinality in 13){
+    
+    load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s_Error.RData', cardinality, relationship))
+    
+    # Distribution of IBS (for a given relationship, cardinality, COI pattern, they should be approximately the same)
+    fracs_evi_IBS = sapply(Data_summaries, function(x){x$frac_evi_IBS})
+    colnames(fracs_evi_IBS) = apply(settings[jobs_cor,], 1, function(x) paste(as.numeric(x[1]), x[2], x[3], collapse = ''))
+    require(RColorBrewer)
+    cols = sapply(brewer.pal(length(Ms), 'GnBu'), adjustcolor, alpha.f = 1) # Adjust col if hist
+    names(cols)= Ms
+    
+    cs = c(0,0) 
+    for(j in 1:ncol(fracs_evi_IBS)){
+      pars = unlist(strsplit(colnames(fracs_evi_IBS)[j], split = ' '))
+      if(all(pars[2:3] == cs)){ADD = T}else{ADD = F} 
+      
+      # As histogram: a bit too messy
+      # hist(fracs_evi_IBS[,j], xlim = c(0,1), col = cols[pars[1]], las = 1, add = ADD, breaks = 20, 
+      #      main = bquote(italic(c)^(1)==.(pars[2])~"  "~italic(c)^(2)==.(pars[3])), 
+      #      xlab = 'Fraction of evidence of IBS',
+      #      ylab = 'Number of epsisode pairs')
+      
+      # As density
+      if(!all(pars[2:3] == cs)){ 
+        dens = density(fracs_evi_IBS[,j])
+        plot(dens, xlim = c(0,1), type = 'l', ylim = c(0,2*max(dens$y)), bty = 'n', 
+             col = cols[pars[1]], xlab = 'Fraction with IBS evidence', las = 1, 
+             main = sprintf("Cardinality: %s; Scenario: %s", cardinality, relationship))
+        title(main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])), line = -1)
+      } else {
+        lines(density(fracs_evi_IBS[,j]), col = cols[pars[1]])
+      }
+      
+      abline(v = mean(fracs_evi_IBS[,j]), col = cols[pars[1]])
+      legend('topleft', lty = 1, col = cols, legend = names(cols), 
+             inset = 0.025, cex = 1, title = expression(italic(m)))
+      cs = pars[2:3]
+    }
+  }
+}
+```
+
+
+```{r fraction_het_epi1, fig.height = 8, fig.width = 12, echo = F, include = F}
+#=====================================================================
+# Visualize summarised data fraction het episode 1 
+#=====================================================================
+par(mfrow = c(3,6))
+for(relationship in c("Sibling", "Stranger","Clone")){
+  
+  for(cardinality in cardinalities){
+    
+    load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s.RData', cardinality, relationship))
+  
+    fracs_het_epi1 = sapply(Data_summaries, function(x){x$frac_het_epi1})
+    colnames(fracs_het_epi1) = apply(settings[jobs_cor,], 1, function(x) paste(as.numeric(x[1]), x[2], x[3], collapse = ''))
+    require(RColorBrewer)
+    cols = sapply(brewer.pal(length(Ms), 'GnBu'), adjustcolor, alpha.f = 1) # Adjust col if hist
+    names(cols)= Ms
+    
+    cs = c(0,0) 
+    for(j in 1:ncol(fracs_het_epi1)){
+      pars = unlist(strsplit(colnames(fracs_het_epi1)[j], split = ' '))
+      if(all(pars[2:3] == cs)){ADD = T}else{ADD = F} 
+      
+      # As density
+      if(!all(pars[2:3] == cs)){ 
+        if(diff(range(fracs_het_epi1[,j])) == 0){
+          plot(NULL, xlim = c(0,1), ylim = c(0,2*max(dens$y)), bty = 'n', 
+               xlab = 'Fraction het. episode 1', las = 1, 
+               main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])))
+          abline(v = mean(fracs_het_epi1[,j]))
+        } else {
+          dens = density(fracs_het_epi1[,j])
+          plot(dens, xlim = c(0,1), type = 'l', ylim = c(0,2*max(dens$y)), bty = 'n', 
+               col = cols[pars[1]], xlab = 'Fraction het. episode 1', las = 1, 
+               main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])))
+        }
+        
+      } else {
+        if(diff(range(fracs_het_epi1[,j])) == 0){next()
+        } else {
+          lines(density(fracs_het_epi1[,j]), col = cols[pars[1]])   
+        }
+      }
+      
+      abline(v = mean(fracs_het_epi1[,j]), col = cols[pars[1]])
+      legend('topleft', lty = 1, col = cols, legend = names(cols), inset = 0.025, cex = 0.5)
+      cs = pars[2:3]
+    }
+  }
+}
+```
+
+
+```{r fraction_het_epi2, fig.height = 8, fig.width = 12, echo = F, include = F}
+#=====================================================================
+# Visualize summarised data fraction het epsisode 2 
+#=====================================================================
+par(mfrow = c(3,6))
+for(relationship in c("Sibling", "Stranger", "Clone")){ 
+  for(cardinality in cardinalities){
+    
+    load(sprintf('SimulationOutputs/Sim_Genetic_Data/MS_summary_Cardinality%s_%s.RData', cardinality, relationship))
+    
+    fracs_het_epi2 = sapply(Data_summaries, function(x){x$frac_het_epi2})
+    colnames(fracs_het_epi2) = apply(settings[jobs_cor,], 1, function(x) paste(as.numeric(x[1]), x[2], x[3], collapse = ''))
+    require(RColorBrewer)
+    cols = sapply(brewer.pal(length(Ms), 'GnBu'), adjustcolor, alpha.f = 1) # Adjust col if hist
+    names(cols)= Ms
+    
+    cs = c(0,0) 
+    for(j in 1:ncol(fracs_het_epi2)){
+      pars = unlist(strsplit(colnames(fracs_het_epi2)[j], split = ' '))
+      if(all(pars[2:3] == cs)){ADD = T}else{ADD = F} 
+      
+      # As density
+      if(!all(pars[2:3] == cs)){ 
+        
+        if(diff(range(fracs_het_epi2[,j])) == 0){
+          plot(NULL, xlim = c(0,1), ylim = c(0,2*max(dens$y)), bty = 'n', 
+               xlab = 'Fraction het. episode 2', las = 1, 
+               main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])))
+          abline(v = mean(fracs_het_epi2[,j]), col = 'black')
+        } else {
+          dens = density(fracs_het_epi2[,j])
+          plot(dens, xlim = c(0,1), type = 'l', ylim = c(0,2*max(dens$y)), bty = 'n', 
+               col = cols[pars[1]], xlab = 'Fraction het. episode 2', las = 1, 
+               main = bquote(italic(c)^(1)==.(pars[2])~" "~italic(c)^(2)==.(pars[3])))
+        }
+        
+      } else {
+        if(diff(range(fracs_het_epi2[,j])) == 0){next()
+        } else {
+          lines(density(fracs_het_epi2[,j]), col = cols[pars[1]])   
+        }}
+      
+      
+      abline(v = mean(fracs_het_epi2[,j]), col = cols[pars[1]])
+      legend('topleft', lty = 1, col = cols, legend = names(cols), inset = 0.025, cex = 0.5)
+      cs = pars[2:3]
+    }
+  }
+}
+```
+
+\pagebreak
+
+
+\section{Results}
+
+```{r results_COI_effect, fig.width = 12, fig.height = 5, echo = F, fig.cap='\\label{fig: no-error}The probability of recurrent states as a function of the number of markers typed in a sibling, stranger and clonal scenario without error.'}
+States = c("C","I","L")
+State_names = list(L='Relapse',I='Reinfection',C='Recrudescence')
+if(PLOT_RESULTS){
+  
+  mycols = brewer.pal(length(State_names), 'Dark2')
+  relationship_names = c('Clone' = 'Clonal scenario', 
+                         'Sibling' = 'Sibling scenario',
+                         'Stranger' = 'Stranger scenario')
+  
+  par(mfrow = c(1,3), family = 'serif', pty = 's', oma = c(0,0,3,0), las =1, mar=c(4,5,4,1))
+  BESIDES = T # Allows visualisation of error by stacking bars side by side
+  
+  for(cardinality in cardinalities){ # cardinalities
+    
+    for(pattern in unique(settings[jobs_cor,]$COI_pattern)){
+      
+      JOBS_pattern <- which(settings$COI_pattern == as.character(pattern))
+      
+      for(relationship in relationships){ # Iterate over simulation scenarions (types of data)
+        
+        # Load data 
+        load(sprintf('./SimulationOutputs/Sim_Genetic_Results/%s_%s.RData',relationship, cardinality))
+        
+        # Extract medians
+        X <- sapply(JOBS_pattern, function(x){
+          ind <- thetas_all$setting == x
+          apply(thetas_all[ind,States], 2, median, na.rm = T)
+        })
+        
+        # Extract standard deviations
+        sds <- sapply(JOBS_pattern, function(x){
+          ind <- thetas_all$setting == x
+          apply(thetas_all[ind,States], 2, sd, na.rm = T)
+        })
+        
+        pct_unconverged <- sapply(JOBS_pattern, function(x){
+          ind <- thetas_all$setting == x
+         round(mean(grepl('P0', thetas_all[ind,'Phased']))*100)
+        })
+        
+        colnames(X) = settings[JOBS_pattern,'M']
+      
+        # Barplot
+        Z = barplot(X, beside = BESIDES, col = mycols[1:3], ylim = c(0,1), 
+                    ylab = '', xlab = '', cex.names=1.5, cex.axis = 1.5,
+                    main = relationship_names[relationship], names.arg = Ms)
+        
+        # polygon(col = transparent_pink_band, 
+        #         x = c(min(Z)-1,max(Z)+1,max(Z)+1,min(Z)-1),
+        #         y = c(Epsilon_lower, Epsilon_lower, Epsilon_upper, Epsilon_upper), 
+        #         border = NA)
+        
+        mtext(text = 'Probability', side = 2, line=3.5, cex=1, las=3)
+        mtext(text = 'Number of markers', side = 1, line=3, cex=1.3)
+
+        if(relationship=='Clone'){
+          legend(ifelse(BESIDES,'topleft','top'), fill = mycols[1:3], 
+                 legend = State_names[States], inset = 0.01,cex = 1.3)
+        }
+        
+        # Title
+        mtext(text = sprintf('Marker cardinality: %s \n COI of first and second infection: %s and %s, respectively', 
+                             cardinality, 
+                             strsplit(pattern, split = '_')[[1]][1], 
+                             strsplit(pattern, split = '_')[[1]][2]), side = 3, outer = T)
+        
+        # Add error bars (+/- sd)
+        if(BESIDES){
+          rownames(Z) <- States
+          for(state in States){
+            segments(x0 = Z[state,], x1 = Z[state,], 
+                     y0 = X[state,] - sds[state,], y1 = X[state,] + sds[state,])
+          }
+        }
+       
+         
+        # Add pct uncoverged
+        axis(side = 1, at = Z[2,], labels = pct_unconverged, line = 3.5, cex = 0.7, tick = F)
+        
+        
+        
+        cat("\n")
+      }
+    }
+  }
+}
+
+```
+
+
+```{r GenSim_Error, fig.width = 12, fig.height = 5, echo = F, fig.cap='\\label{fig: error}The probability of recurrent states as a function of the number of markers typed in a sibling, stranger and clonal scenario assuming an extremely high probability of error.'}
+States = c("C","I","L")
+State_names = list(L='Relapse',I='Reinfection',C='Recrudescence')
+if(PLOT_RESULTS){
+  
+  mycols = brewer.pal(length(State_names), 'Dark2')
+  relationship_names = c('Clone' = 'Clonal scenario', 
+                         'Sibling' = 'Sibling scenario',
+                         'Stranger' = 'Stranger scenario')
+  
+  par(mfrow = c(1,3), family = 'serif', pty = 's', oma = c(0,0,3,0), las =1, mar=c(4,5,4,1))
+  BESIDES = T # Allows visualisation of error by stacking bars side by side
+  
+  for(pattern in unique(settings[jobs_cor,]$COI_pattern)){
+    
+    JOBS_pattern <- which(settings$COI_pattern == as.character(pattern))
+    
+    for(relationship in relationships){ # Iterate over simulation scenarions (types of data)
+      
+      # Load data 
+      load(sprintf('./SimulationOutputs/Sim_Genetic_Results/%s_13_Error.RData',relationship))
+      
+      # Extract medians
+      X <- sapply(JOBS_pattern, function(x){
+        ind <- thetas_all$setting == x
+        apply(thetas_all[ind,States], 2, median, na.rm = T)
+      })
+      
+      # Extract standard deviations
+      sds <- sapply(JOBS_pattern, function(x){
+        ind <- thetas_all$setting == x
+        apply(thetas_all[ind,States], 2, sd, na.rm = T)
+      })
+      
+      pct_unconverged <- sapply(JOBS_pattern, function(x){
+          ind <- thetas_all$setting == x
+         round(mean(grepl('P0', thetas_all[ind,'Phased']))*100)
+        })
+      
+      colnames(X) = settings[JOBS_pattern,'M']
+      
+      # Barplot
+      Z = barplot(X, beside = BESIDES, col = mycols[1:3], ylim = c(0,1), 
+                  ylab = '', xlab = '', cex.names=1.5,cex.axis = 1.5,
+                  main = relationship_names[relationship],names.arg = Ms)
+      
+      # polygon(col = transparent_pink_band, 
+      #           x = c(min(Z)-1,max(Z)+1,max(Z)+1,min(Z)-1),
+      #           y = c(Epsilon_lower, Epsilon_lower, Epsilon_upper, Epsilon_upper), 
+      #           border = NA)
+      
+      mtext(text = 'Probability', side = 2, line=3.5, cex=1, las=3)
+      mtext(text = 'Number of markers', side = 1, line=3, cex=1.3)
+      # if(relationship=='Clone'){ 
+      #   legend(ifelse(BESIDES,'topleft','top'), fill = mycols[1:3], 
+      #          legend = State_names[States], inset = 0.01,cex = 1.3)
+      # }
+      
+      # Title
+      mtext(text = sprintf('Marker cardinality: %s \n COI of first and second infection: %s and %s, respectively', 
+                           cardinality, 
+                           strsplit(pattern, split = '_')[[1]][1], 
+                           strsplit(pattern, split = '_')[[1]][2]), side = 3, outer = T)
+      
+      # Add error bars (+/- sd)
+      if(BESIDES){
+        rownames(Z) <- States
+        for(state in States){
+          segments(x0 = Z[state,], x1 = Z[state,], 
+                   y0 = X[state,] - sds[state,], y1 = X[state,] + sds[state,])
+        }
+      }
+      
+       # Add pct uncoverged
+        axis(side = 1, at = Z[2,], labels = pct_unconverged, line = 3.5, cex = 0.7, tick = F)
+       
+      
+      cat("\n")
+    }
+  }
+}
+
+```
+
+
+```{r GenSim_COI31, fig.width = 12, fig.height = 5, echo = F, fig.cap='\\label{fig: COI31}The probability of recurrent states as a function of the number of markers typed in a sibling, stranger and clonal scenario when the COI of the initial infection is three and the COI of the recurrent infection is one.'}
+States = c("C","I","L")
+State_names = list(L='Relapse',I='Reinfection',C='Recrudescence')
+if(PLOT_RESULTS){
+  
+  mycols = brewer.pal(length(State_names), 'Dark2')
+  relationship_names = c('Clone' = 'Clonal scenario', 
+                         'Sibling' = 'Sibling scenario',
+                         'Stranger' = 'Stranger scenario')
+  
+  par(mfrow = c(1,3), family = 'serif', pty = 's', oma = c(0,0,3,0), las =1, mar=c(4,5,4,1))
+  BESIDES = T # Allows visualisation of error by stacking bars side by side
+  
+  for(pattern in unique(settings[jobs_add,]$COI_pattern)){
+    
+    JOBS_pattern <- which(settings$COI_pattern == as.character(pattern))
+    
+    for(relationship in relationships){ # Iterate over simulation scenarions (types of data)
+      
+      # Load data 
+      load(sprintf('./SimulationOutputs/Sim_Genetic_Results/%s_13_COIs3_1.RData',relationship))
+      
+      # Extract medians
+      X <- sapply(JOBS_pattern, function(x){
+        ind <- thetas_all$setting == x
+        apply(thetas_all[ind,States], 2, median, na.rm = T)
+      })
+      
+      # Extract standard deviations
+      sds <- sapply(JOBS_pattern, function(x){
+        ind <- thetas_all$setting == x
+        apply(thetas_all[ind,States], 2, sd, na.rm = T)
+      })
+      
+      pct_unconverged <- sapply(JOBS_pattern, function(x){
+          ind <- thetas_all$setting == x
+         round(mean(grepl('P0', thetas_all[ind,'Phased']))*100)
+        })
+      
+      colnames(X) = settings[JOBS_pattern,'M']
+      
+      # Barplot
+      Z = barplot(X, beside = BESIDES, col = mycols[1:3], ylim = c(0,1), 
+                  ylab = '', xlab = '', cex.names=1.5,cex.axis = 1.5,
+                  main = relationship_names[relationship], names.arg = Ms)
+      
+      # polygon(col = transparent_pink_band, 
+      #           x = c(min(Z)-1,max(Z)+1,max(Z)+1,min(Z)-1),
+      #           y = c(Epsilon_lower, Epsilon_lower, Epsilon_upper, Epsilon_upper), 
+      #           border = NA)
+      
+      mtext(text = 'Probability', side = 2, line=3.5, cex=1, las=3)
+      mtext(text = 'Number of markers', side = 1, line=3, cex=1.3)
+      if(relationship=='Clone'){
+        legend(ifelse(BESIDES,'topleft','top'), fill = mycols[1:3], 
+               legend = State_names[States], inset = 0.01,cex = 1.3)
+      }
+      
+      # Title
+      mtext(text = sprintf('Marker cardinality: %s \n COI of first and second infection: %s and %s, respectively', 
+                           cardinality, 
+                           strsplit(pattern, split = '_')[[1]][1], 
+                           strsplit(pattern, split = '_')[[1]][2]), side = 3, outer = T)
+      
+      # Add error bars (+/- sd)
+      if(BESIDES){
+        rownames(Z) <- States
+        for(state in States){
+          segments(x0 = Z[state,], x1 = Z[state,], 
+                   y0 = X[state,] - sds[state,], y1 = X[state,] + sds[state,])
+        }
+      }
+      
+       # Add pct uncoverged
+        axis(side = 1, at = Z[2,], labels = pct_unconverged, line = 3.5, cex = 0.7, tick = F)
+       
+      cat(" ")
+    }
+  }
+}
+
+```
+
+
+\subsection{Inference as a function of the number of markers typed discounting error}
+
+In Figures 3 to 8, each plot corresponds to a different relationship simulation scenario where data are simulated without error. Colored bars show the median posterior probabilities with error bars extending $\pm$ one standard deviation. The effective cardinality of each marker was set equal to either 4 or 13 in these simulations. The complexities of infection were either one in both first and second infections, two in the first and one in the second, or one in the first and two in the second. 
+The prior probability of each recurrence state was 1/3. As the number of microsatellites genotyped is increased, recurrent state probabilities converge as expected: 
+
+- under the sibling scenario, the probabilities converge to one for relapse and zero otherwise; 
+
+- under the stranger scenario, the probability of reinfection converges to a probability greater than the prior, meanwhile the probability of relapse converges to the complement of reinfection and probability of recrudescence converges to zero. Note that this is true even when the fraction of markers with evidence of IBS is close to 0.5 (e.g. compare left-top plot of Figure 1 and middle plot of Figure 5). 
+
+- under the clonal scenario, the probability of recrudescence converges a probability greater than the prior, meanwhile the probability of relapse converges to the complement of recrudescence and the probability of reinfection converges to zero.
+
+Convergence happens most slowly under the sibling scenario. As such, the sibling scenario dictates marker requirements in general. When the effective cardinality is 4, more than 12 markers are required for full convergence. When the effective cardinality is 13, 9 or more markers are required. 
+
+The genetic model relies on data that list alleles detected at genotyped microsatellite markers (i.e. alleles are either detected or not). The model does not account for error in the alleles detected, nor incorporate weighted evidence of majority versus minority alleles. First, let's consider the failure to detect minority clones, second let's consider the impact of error. 
+
+\subsection{Undetected parasite haploid genotypes}
+
+Failure to detect data from a minority parasite haploid genotype will have different consequences depending on the relationship of the minority parasite haploid genotype in relation to other parasite haploid genotypes across episodes. For example, referring to the plots in Figures 6 and 7 as illustrative scenarios where `COI x y' denotes a COI of x in the first infection and a COI of y in the second infection, 
+
+- in the Sibling COI 2 1 case (left plot, Figure 7) failure to detect the stranger parasite will result in the Sibling COI 1 1 case (left plot, Figure 6), thereby increasing the probability of relapse; meanwhile, failure to detect the sibling parasite will result in the Stranger COI 1 1 case (middle plot, Figure 6), thereby decreasing the probability of relapse, but not erasing it. Note that the case in which the noisy parasite is unrelated demonstrates the most severe possible outcome: if the noisy parasite were related, failure to detect it would result in a Sibling COI 1 1 case thereby maintaining the probability of relapse.  
+
+- in the Stranger COI 2 1 case (middle plot, Figure 7) failure to detect either stranger parasite will result in the Stranger COI 1 1 case (middle plot, Figure 6), maintaining the probability of reinfection and relapse. 
+
+- In the Clone COI 2 1 case (right plot, Figure 7) failure to detect the stranger parasite will result in the Clone COI 1 1 case (right plot, Figure 7), thereby maintaining the probability of recrudescence and relapse; meanwhile, failure to detect the clonal parasite will result in the Stranger COI 1 1 case (middle plot, Figure 7), thereby replacing the probability of recrudescence with reinfection.
+
+The examples above illustrate the robust versus frail nature of relapse inference versus recrudescence inference, respectively. As we shall see in the next section, relapse inference is also robust in the presence of error, whereas recrudescence is not. 
+
+\subsection{Erroneous data}
+
+Figures 9 to 11 shows inference in the presence of unmodelled error. The probability of error, 0.2, was set extremely high to clearly illustrate model behavior. Realistic error rates will have much less impact. Error largely impacts impacts inference of recrudescence: in the Clonal scenario clonal parasites are interpreted as sibling parasites and the probability of relapse tends towards one.
+
+\subsection{Highly complex data}
+
+A major limitation of the genetic model has to do with computational complexity. One aspect relevant to the present simulation study is described below. When samples are complex and highly diverse, e.g. when they contain majority unrelated parasites, unconverged probabilistic phasing is liable to miss clonally compatible combinations among the vast number of combinations that are possible. Recall that clonally compatible combinations are the only ones compatible with recrudescence. The total number of possible combinations grows exponentially with the number of markers genotyped, making the probability that probabilistic phasing captures the few clonally compatible combinations increasing slim and rendering probability estimates increasingly frail for recrudescence (Figure \ref{fig: COI31}). Such highly complex scenarios are extreme. They are helpful for illustrating the problem (Figure \ref{fig: COI31}), but not representative of the VHX and BPD data: all those analysed using probabilistic phasing converged. Otherwise stated, inconsistency is not a problem VHX and BPD data analysed under the model, but could be for future data sets. 
+
+\section{Conclusion}
+The current genetic model does not account for error in alleles detected, nor incorporate weighted evidence of majority versus minority alleles. These omissions render inference of recrudescence under the current model brittle, but have little impact on inference of reinfection versus relapse. As such, analyses of data from the Thailand Myanmar border, where evidence of resistant \textit{P. vivax} is lacking, are likely robust to the above omissions. However, the model merits extension before application to data from a region where \textit{P. vivax} resistance is suspected. 
+
+

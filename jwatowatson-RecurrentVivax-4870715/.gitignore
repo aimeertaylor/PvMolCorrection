@@ -1,0 +1,50 @@
+# knitr and R markdown default cache directories
+/*_cache/
+/cache/
+**/*_cache/ # Added by aimee
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+
+# Massive stan output files
+StanModels_mod*
+# Special code for big RData files
+*.bigRData
+
+*.html
+*.tex
+# James: I don't think the pdf output files are very useful on github
+*.pdf
+
+Timing_Model/TimingModelStan_cache/*
+Pooled_Final_Analysis/*_cache/
+
+# The 2D6 data which is sensitive
+RData/PK_data/TwoD6&Vivax Genotyping_ASscore*
+
+Simulation_Study/*_cache/
+# Simulation_Study/*_files/
+
+# Ignore all the DS_Stores
+**/.DS_Store
+Timing_Model/.Rhistory
+
+# Ignore .Rhistory 
+**/.Rhistory
+Pooled Final Analysis/Pooled_Analysis.R
+Timing_Model/OutputResults/thetas_mod1.RData
+
+
+.dropbox
+Icon
+Icon
+Icon
+Icon
+RData/LargeFiles/StanModels_Sim1_mod1.RData
+RData/LargeFiles/StanModels_Sim2_mod2.RData
+RData/LargeFiles/StanModels_SimSeasonal_mod1.RData
+RData/LargeFiles/StanModels_SimSeasonal_mod2.RData
+RData/TimingModel/simulation_full_results_mod1.RData
+RData/TimingModel/simulation_full_results_mod2.RData
+RData/TimingModel/simulation_full_results_mod_seasonal.RData
