@@ -1,8 +1,6 @@
 ################################################################################
-# Confirming the role of NAs in the microsatellite data: Intra-episode per
-# marker allele counts of zero confirm NAs encode missingness. Intra-episode per
-# marker maximum allele counts of one confirm NAs are also used as fillers for
-# markers whose observed cardinality is less than the MOI when MOI > 1
+# Role of NAs in the microsatellite data: NAs encode missingness and are used as
+# fillers for markers with allele counts below the MOI
 ################################################################################
 rm(list = ls())
 
@@ -27,9 +25,11 @@ within_episode_allele_counts <- sapply(MS_pooled_byepisode, function(x) {
   })
 })
 
-# Max allele count is one (confirms NAs are used as a filler)
-range(within_episode_allele_counts)
+# Min allele count zero: confirms NAs encode missingness
+min(within_episode_allele_counts)
 
-# Example 
-MS_pooled_example <- MS_pooled_byepisode$VHX_225_3
-MS_pooled_example
+# Max allele count one (no repeats): confirms NAs are used as filler
+max(within_episode_allele_counts)
+
+# Example of NA use as filler: 
+MS_pooled_byepisode$VHX_225_3

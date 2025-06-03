@@ -18,7 +18,6 @@
 # infections.
 ################################################################################
 rm(list = ls())
-library(Pv3Rs) # To get fs_VHX_BPD
 
 # Old allele frequencies: FS_combined
 load('~/Documents/RecurrentVivax/RData/Data_for_relatedness.RData')
@@ -26,7 +25,7 @@ load('~/Documents/RecurrentVivax/RData/Data_for_relatedness.RData')
 # Compare old and fs_VHX_BPD: doesn't appear to be any systematic bias consistent with
 # most samples being reinfections/relapses not subject to any systematic
 # within-patient selection
-for(MS in names(fs_VHX_BPD)){
+for(MS in names(Pv3Rs::fs_VHX_BPD)){
   plot(fs_VHX_BPD[[MS]], Fs_Combined[[MS]])
   abline(a = 0, b = 1, lty = 'dashed')
 }

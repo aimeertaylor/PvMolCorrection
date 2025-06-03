@@ -10,16 +10,13 @@
 # they likely have little effect.
 ################################################################################
 rm(list = ls())
-library(Pv3Rs)
 
-# Load prior estimates 
-load("../../RData/prior_estimates.RData")
-
-# Get episode IDs for episodes with genetic-data (ys_VHX_BPD includes some unpaired data)
+# Get episode IDs for episodes with genetic-based estimates
 load("../../RData/marg_results_Pv3Rs.RData")
 epIDs <- rownames(TimeToEvent_Pv3Rs)
 
-# Trim priors to only episodes with genetic data
+# Load and trim priors to only episodes with genetic-based estimates
+load("../../RData/prior_estimates.RData")
 prior <- prior[epIDs, ]
 prior_unnorm <- prior_unnorm[epIDs, ]
 

@@ -1,5 +1,6 @@
 ################################################################################
-# Generate a table that contains per-episode MOIs: sufficient statistic for feasibility of estimation
+# Generate a table that contains per-episode MOIs: sufficient statistic for
+# feasibility of estimation using both the prototype and Pv3Rs
 ################################################################################
 list(list = ls())
 library(Pv3Rs) # For plots
@@ -14,7 +15,7 @@ arm <- sapply(split(Combined_Time_Data$arm_num, Combined_Time_Data$patientid), u
 pmq <- sapply(arm, function(x) grepl("PMQ", x))
 
 # Get vectors of MOIs for all study participants with one ore more typed episode
-MOIs <- sapply(ys_VHX_BPD, function(y) determine_MOIs(y, return.names = T))
+MOIs <- sapply(Pv3Rs::ys_VHX_BPD, function(y) determine_MOIs(y, return.names = T))
 
 # Get MOI summaries for typed episodes
 typd_epi_count <- sapply(MOIs, function(x) length(as.numeric(names(x))))
@@ -34,12 +35,14 @@ tab_MOIs <- data.frame(tab_MOIs, Total = rowSums(tab_MOIs, na.rm = T),
 # For overleaf, compute number of recurrences and participants with paired data
 # (length(MOIs) accounts for typd_epi_count = 1 cases because these feature only once in
 # length(unlist(MOIs)))
-n_recur <- length(unlist(MOIs)) - length(MOIs)
-n_pids <- sum(tab_MOIs$Typed.episode.count > 1)
+n_recur <- length(unlist(MOIs)) - length(MOIs) # No. of recurrences with paired data
+n_pids <- sum(tab_MOIs$Typed.episode.count > 1) # No. of pids with paired data
 
 # For overleaf, compute number of participants with data that can be analysed jointly
 n_pids_joint_proto <- sum(tab_MOIs$Typed.episode.count > 1 & tab_MOIs$Typed.episode.count < 4 & tab_MOIs$Total < 6)
 n_pids_joint_pv3Rs <- sum(tab_MOIs$Typed.episode.count > 1 & tab_MOIs$Total < 9)
+
+# For overleaf, compute the % decrease in number of pids whose data were modelled pairwise 
 ((n_pids-n_pids_joint_pv3Rs) - (n_pids-n_pids_joint_proto-4))/(n_pids-n_pids_joint_proto-4)
 
 # Generate excel file to generate figure
@@ -47,22 +50,23 @@ write.csv2(tab_MOIs[tab_MOIs$Total > 5 | tab_MOIs$Typed.episode.count > 3, ],
            file = "../Figures/tab_MOIs.csv")
 
 # In excel:
-# order rows by MOI total, epi_counts and then typd_epi_count
+# order rows by MOI total, epi_counts, and then typd_epi_count
 # colour recurrences for which the prototype was not able to generate estimates:
 # "VHX_239_2" "VHX_461_2" "VHX_39_2" "VHX_52_2" "VHX_583_2" "VHX_33_2"
-# colour participants for which estimates had to be generated pairwise: > 3
-# episodes for prototype, > 8 MOI total for Pv3Rs
+# colour participants for which estimates had to be generated pairwise: 
+# > 3 episodes for prototype, 
+# > 8 MOI total for Pv3Rs,
 # save as excel and take screen shot
 
 # Plot all paired data
 png("../Figures/data_paired.png", width = 7, height = 7, units = "in", res = 300)
-plot_data(ys = ys_VHX_BPD[names(which(typd_epi_count > 1))], fs = fs_VHX_BPD)
+Pv3Rs::plot_data(ys = ys_VHX_BPD[names(which(typd_epi_count > 1))], fs = fs_VHX_BPD)
 dev.off()
 
 # Plot data for pids with a recurrence whose recurrent state probability could
 # not be estimated using the prototype
 png("../Figures/data_unestimatable.png", width = 7, height = 7, units = "in", res = 300)
-plot_data(ys = ys_VHX_BPD[c( "VHX_239","VHX_461","VHX_39","VHX_52","VHX_583","VHX_33")], fs = fs_VHX_BPD)
+Pv3Rs::plot_data(ys = Pv3Rs::ys_VHX_BPD[c( "VHX_239","VHX_461","VHX_39","VHX_52","VHX_583","VHX_33")], fs = fs_VHX_BPD)
 dev.off()
 
 
