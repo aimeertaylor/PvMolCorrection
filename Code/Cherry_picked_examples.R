@@ -27,7 +27,10 @@ text(x = rep(0.07, length(probs)),
      labels = paste0(states, " ", 100*round(probs,2), "%"), 
      cex = 0.7)
 
-
+# For website: 
+png("../Figures/cherry_picked.png")
+plot_data(ys = ys_VHX_BPD[cherries], fs = fs_VHX_BPD, marker_annotate = F)
+dev.off()
 
 
 
