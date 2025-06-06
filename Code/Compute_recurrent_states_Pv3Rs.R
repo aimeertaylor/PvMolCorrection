@@ -4,12 +4,13 @@
 # 1) a uniform prior
 # 2) normalised time-to-event posterior mean estimates
 #
-# Could-do: To compute median-based PQ failure rates with CIs need to generate
-# estimates for all 100 posterior time-to-event draws stored in
+# To compute median-based PQ failure rates with CIs need to generate estimates
+# for all 100 posterior time-to-event draws stored in
 # load('../RData/TimingModel/MOD2_Posterior_samples.RData') and 100 draws from
 # the posterior allele frequency distribution, which we cannot replicate exactly
 # because we didn't use set.seed in Pooled_Analysis.Rmd. This would cost approx.
-# 100 hours of computation - expensive energy waste if not needed.
+# 100 hours of computation - an unjustified expense given the focus here is on 
+# the genetic analysis.
 ################################################################################
 
 rm(list = ls())
@@ -17,13 +18,10 @@ library(Pv3Rs)
 source("compute_posterior_pairwise.R")
 
 #===============================================================================
-# Get prior estimates based on time-to-event
+# Get prior estimates based on time-to-event and normalise
 #===============================================================================
-# Load time-to-event estimates downloaded from the following link and saved to
-# Vivax_VHXBPD_reanalysis/RData here. Download link (see Taylor & Watson 2019):
-# https://zenodo.org/records/3368828. Location within download:
-# jwatowatson/jwatowatson-RecurrentVivax-4870715/RData/TimingModel/
-load("../RData/MOD2_theta_estimates.RData")
+# Load time-to-event estimates generated in original study 
+load("../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/MOD2_theta_estimates.RData")
 
 # Extract posterior means (Pooled_Analysis.Rmd lines 672 and 1807)
 inds = grepl('mean_theta', colnames(Mod2_ThetaEstimates))
@@ -72,8 +70,6 @@ for(pid in paired_data_pids) {
 }
 tictoc::toc()
 
-# ==============================================================================
 # Save
-# ==============================================================================
 save(TimeToEvent_joint, Uniform_joint, TimeToEvent_pairwise, Uniform_pairwise,
      file = "../RData/results_Pv3Rs.RData")

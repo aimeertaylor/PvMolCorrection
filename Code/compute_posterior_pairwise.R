@@ -1,4 +1,3 @@
-# Pairwise inference 
 compute_posterior_pairwise <- function(y, fs, prior = NULL) {
 
   # Number of episodes 

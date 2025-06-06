@@ -1,0 +1,506 @@
+---
+title: "Pooled Analysis - supplementary"
+author: "Aimee Taylor and James Watson"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+    keep_md: yes
+---
+
+# Preamble
+
+Load R packages, functions and data.
+
+```{r, echo=FALSE, include=FALSE}
+#==========================================================================
+# Set up
+#==========================================================================
+knitr::opts_chunk$set(cache = TRUE, cache.comments = FALSE, 
+                      include = TRUE, 
+                      fig.width = 7, fig.height = 7,
+                      fig.pos = 'H', 
+                      dev = 'png', dpi = 300)
+
+
+rm(list = ls())
+load('../RData/RPackages_List.RData')
+new.pkg <- pkgs[!(pkgs %in% installed.packages()[, "Package"])]
+if(length(new.pkg) > 0){ # Install using .R script
+  stop('Please run the script Install_and_load_required_packages.R before returning to this script. Thanks.')}else{
+     sapply(pkgs, require, character.only = TRUE) # Load all packages
+  }
+
+tic()
+load('../RData/TimingModel/Combined_Time_Event.RData')
+load('../RData/FinalRecurrenceEstimates.RData')
+source("../Genetic_Model/Data_functions.R")
+source('../Genetic_Model/iGraph_functions.R')
+source("../Genetic_Model/post_prob_CLI.R") 
+source("../Genetic_Model/test_Rn_compatible.R") 
+source("../Genetic_Model/Data_Inflation_Functions.R")
+
+# The pooled MS data from BPD and VHX
+load('../RData/GeneticModel/MS_data_PooledAnalysis.RData')
+
+# Booleans that describe generation of Markdown file. 
+# The large jobs should be done on the cluster
+
+# runs the once model on those that can be directly computed
+RUN_MODELS_SINGLE_SIMPLE = F           # can do on laptop (5 minutes)
+# runs the model for 100 random draws from the Time model posterior on those that can be directly computed
+RUN_MODELS_FULL_POSTERIOR_SIMPLE = F    # can do on laptop (2 hours)
+# runs the model for 100 random draws from the Time model posterior on those that cannot be directly computed
+RUN_MODELS_FULL_POSTERIOR_INFLATED = F  # cluster is better (10 hours)
+# Does the false positive discovery estimation
+RUN_MODELS_FALSE_POSITIVE = F           # only cluster (1 day with 42 cores)
+# generates plots
+CREATE_PLOTS = T
+
+# Colour scheme
+# Previous Set1 not colourblind friendly: display.brewer.all(colorblindFriendly = T)
+Dark2 = brewer.pal(8, 'Dark2')
+
+# This needs moving to time analysis: 
+drug_cols3 = array(Dark2[c(4,6,1)], dim = 3, dimnames = list(c('AS','CHQ','CHQ/PMQ'))) 
+drug_cols2 = array(Dark2[c(2,2,1)], dim = 3, dimnames = list(c('AS','CHQ','CHQ/PMQ')))
+drug_cols_light2 = sapply(drug_cols2, adjustcolor, alpha.f = 0.5)
+
+# Vector of states
+states = c(relapse = 'L', reinfection = 'I', recrudescence = 'C')
+
+# James, there are some odd bugs something to do with !duplicated() and the tibble...
+# https://stackoverflow.com/questions/39041115/fixing-a-multiple-warning-unknown-column
+
+## Threshold values for classification
+Epsilon_upper = 0.9
+Epsilon_lower = 0.1
+transparent_pink_band = adjustcolor(Dark2[4], alpha.f = 0.2)
+```
+
+## Data processing
+
+```{r}
+# First we remove MS data for which there are no recurrent data
+N_episodes_typed = table(MS_pooled$ID[!duplicated(MS_pooled$Episode_Identifier)])
+MS_pooled = filter(MS_pooled, ID %in% names(N_episodes_typed[N_episodes_typed>1]))
+# recreate pooled summary dataset
+MS_pooled_summary = MS_pooled[!duplicated(MS_pooled$Episode_Identifier),] 
+
+writeLines(sprintf('Number of individuals with at least two typed episodes analysed: %s',
+                   length(unique(MS_pooled$ID))))
+writeLines(sprintf('Number of episodes in individuals with at least two typed episodes analysed: %s',
+                   length(unique(MS_pooled$Episode_Identifier))))
+writeLines(sprintf('Number of typed recurrences analysed: %s',
+                   length(unique(MS_pooled$Episode_Identifier[MS_pooled$Episode>1]))))
+```
+
+First we define the set of microsatellite markers used in this analysis:
+```{r}
+MSs_all = c("PV.3.502","PV.3.27","PV.ms8",
+            "PV.1.501","PV.ms1","PV.ms5",
+            "PV.ms6","PV.ms7","PV.ms16")
+```
+
+We use a multinomial-dirichlet model with subjective weight $\omega$. $\omega = 0$ recovers the empirical allele frequencies. 
+
+```{r, echo=F}
+# Prior weight for the Dirichlet (setting weight to 0 recovers empirical freq):
+D_weight_Prior = 1
+
+# These are motif lengths: for the plotting
+MSs_Motifs = list("PV.3.502"=8,'PV.3.27' = 4, 
+                  "PV.ms8" = 3, "PV.1.501"= 7, 
+                  "PV.ms1" = 3, "PV.ms5" = 3,
+                  "PV.ms6" = 3, "PV.ms16" =3,
+                  "PV.ms7" = 3)
+
+writeLines(paste('Number of episodes used to compute frequencies:',
+                 sum(MS_pooled$Episode==1 & MS_pooled$MOI_id==1)))
+Ind_Primary = which(MS_pooled$Episode==1)
+
+# Posterior Dirichlet parameter vector
+Alpha_Posteriors = apply(MS_pooled[,MSs_all], 2, function(x, Ind_Primary){
+  # Extract xmax 
+  xmax = max(x,na.rm=T)
+  # prior parameter vector (iterpolates unobserved repeat lengths < xmax)
+  param_vector = array(D_weight_Prior, dim = xmax, dimnames = list(1:xmax)) 
+  # observed data summarised as counts
+  obs_counts = table(x[Ind_Primary]) 
+  # posterior parameter vector
+  param_vector[names(obs_counts)] = param_vector[names(obs_counts)] + obs_counts
+  return(param_vector)
+})
+
+# Calculate posterior mean 
+Fs_Combined = sapply(Alpha_Posteriors, function(x){x/sum(x)})
+```
+
+
+## Run model on easy individuals
+
+```{r, include=FALSE}
+if(RUN_MODELS_FULL_POSTERIOR_SIMPLE){
+  #===============================================
+  # Run full Bayesian with sampling at random from time prior 
+  # (treats time posterior as discrete uniform prior)
+  # takes about 1.1 hour on 6 cores
+  # The outer loop is not parallelised - suboptimal coding
+  #===============================================
+  
+  Ksamples = 100
+  tic()
+  Thetas_full_post_TAgnostic = foreach(ss = 1:Ksamples, .combine = cbind) %do% {
+    
+    # draw a random distribution over the allele frequencies from posterior
+    Fs_random = lapply(Alpha_Posteriors, rdirichlet, n=1)
+    # I'm not sure if this is needed - how are these called deep inside?
+    for(i in 1:length(Fs_random)){
+      names(Fs_random[[i]]) = 1:length(Fs_random[[i]])
+    }
+    
+    # run the model
+    thetas_9MS = post_prob_CLI(MSdata = MS_pooled, Fs = Fs_random, 
+                               cores = 7, verbose = F) 
+    thetas_9MS$Episode_Identifier = rownames(thetas_9MS)
+    thetas_9MS
+  }
+  
+  save(Thetas_full_post_TAgnostic, file = '../RData/GeneticModel/Full_Posterior_Model_samples_TAgnostic.RData')
+  toc()
+} else {
+  load(file = '../RData/GeneticModel/Full_Posterior_Model_samples_TAgnostic.RData')
+}
+```
+
+
+# Extra computations for VHX: complex individuals
+
+
+We remove the IDs that can be straightforwardly calculated:
+
+```{r}
+ind_calculated = which(MS_pooled_summary$Episode_Identifier %in% Thetas_full_post_TAgnostic$Episode_Identifier)
+IDs_calculated = unique(MS_pooled_summary$ID[ind_calculated])
+IDs_remaining = unique(MS_pooled_summary$ID[! MS_pooled_summary$ID %in% IDs_calculated])
+writeLines(sprintf('individuals with more than two recurrences: %s',length(IDs_remaining)))
+```
+
+We blow up the pooled analysis into all pairs within individuals:
+
+```{r, include=FALSE}
+MS_inflate = reformat_MSdata(filter(MS_pooled, ID %in% IDs_remaining), MSs = MSs_all)
+MS_inflated = Inflate_into_pairs(MS_data = MS_inflate)
+writeLines(sprintf('Number of pairwise probabilities of recurrence states between episodes: %s',
+                   length(unique(MS_inflated$ID))))
+```
+
+
+```{r, include=FALSE}
+lowerCI=0.05
+upperCI=0.95
+if(RUN_MODELS_FULL_POSTERIOR_INFLATED){  
+  
+  all_rec_eps = unique(MS_inflated$Episode_Identifier[MS_inflated$Episode==2])
+  
+  Ksamples = 100 # 11 hours with 6 cores
+  
+  K_results = sum(!duplicated(MS_inflated$Episode_Identifier[MS_inflated$Episode>1]))
+  
+  # Set up the prior matrix: 
+  # recurrences have 0 prior probability if not comparing sequential episodes
+  P_matrix = array(1/3,dim = c(nrow(MS_inflated),4) )
+  colnames(P_matrix) = c("Episode_Identifier","C","L","I")
+  P_matrix = data.frame(P_matrix)
+  P_matrix[,'Episode_Identifier'] = MS_inflated$Episode_Identifier
+  unique_recurrences = !duplicated(MS_inflated$Episode_Identifier) & MS_inflated$Episode>1
+  ind_one_half = unique_recurrences & 
+    MS_inflated$First_EpNumber < (MS_inflated$Second_EpNumber-1)
+  P_matrix$C[ind_one_half] = 0
+  P_matrix$L[ind_one_half] = 0.5
+  P_matrix$I[ind_one_half] = 0.5
+  P_matrix = P_matrix[unique_recurrences, ]
+  
+  tic()
+  Res_total_TAgnostic=foreach(ss = 1:Ksamples, .combine = cbind) %do% {
+    
+    
+    # draw a random distribution over the allele frequencies from posterior
+    Fs_random = lapply(Alpha_Posteriors, rdirichlet, n=1)
+    # I'm not sure if this is needed - how are these called deep inside?
+    for(i in 1:length(Fs_random)){
+      names(Fs_random[[i]]) = 1:length(Fs_random[[i]])
+    }
+    
+    # This is about 6-7 minutes per run
+    Res_TAgnostic = post_prob_CLI(MSdata = MS_inflated, 
+                                  Fs = Fs_random, p = P_matrix,
+                                  UpperComplexity = 10^6, 
+                                  verbose = F,
+                                  cores = 7)
+    Res_TAgnostic
+  }
+  save(Res_total_TAgnostic, 
+       file = '../RData/LargeFiles/FullPosterior_INF_TAgnostic.bigRData') # save for safety
+  toc()
+  # Summarise the results, all CIs are 90%
+  # Save this summary
+  C_cols = grep('C',colnames(Res_total_TAgnostic))
+  L_cols = grep('L',colnames(Res_total_TAgnostic))
+  I_cols = grep('I',colnames(Res_total_TAgnostic))
+  Results_Inflated_TAgnostic = 
+    data.frame(Episode_Identifier = rownames(Res_total_TAgnostic),
+               C_median = apply(Res_total_TAgnostic[,C_cols],1,
+                                quantile,probs = 0.5,na.rm=T),
+               C_min = apply(Res_total_TAgnostic[,C_cols],1,
+                             quantile,probs = lowerCI,na.rm=T),
+               C_max = apply(Res_total_TAgnostic[,C_cols],1,
+                             quantile,probs = upperCI,na.rm=T),
+               L_median = apply(Res_total_TAgnostic[,L_cols],1,
+                                quantile,probs = 0.5,na.rm=T),
+               L_min = apply(Res_total_TAgnostic[,L_cols],1,
+                             quantile,probs = lowerCI,na.rm=T),
+               L_max = apply(Res_total_TAgnostic[,L_cols],1,
+                             quantile,probs = upperCI,na.rm=T),
+               I_median = apply(Res_total_TAgnostic[,I_cols],1,
+                                quantile,probs = 0.5,na.rm=T),
+               I_min = apply(Res_total_TAgnostic[,I_cols],1,
+                             quantile,probs = lowerCI,na.rm=T),
+               I_max = apply(Res_total_TAgnostic[,I_cols],1,
+                             quantile,probs = upperCI,na.rm=T))
+  save(Results_Inflated_TAgnostic, 
+       file = '../RData/GeneticModel/Full_Posterior_Inflated_TAgnostic.RData')
+} else {
+  load('../RData/GeneticModel/Full_Posterior_Inflated_TAgnostic.RData')
+}
+```
+
+
+Construct adjacency graphs and compute probabilities of relapse and reinfection.
+
+```{r}
+MS_pooled_summary$L_or_C_state = MS_pooled_summary$TotalEpisodes = NA
+MS_pooled_summary$L_lower = MS_pooled_summary$L_upper = MS_pooled_summary$L_median = NA
+MS_pooled_summary$C_lower = MS_pooled_summary$C_upper = MS_pooled_summary$C_median = NA
+MS_pooled_summary$I_lower = MS_pooled_summary$I_upper = MS_pooled_summary$I_median = NA
+# Arrange by complexity
+# Get single rows per episode (throw away the extra MOI information)
+MS_inflated_summary = MS_inflated[!duplicated(MS_inflated$Episode_Identifier) & 
+                                    MS_inflated$Episode==2,]
+Results_Inflated_TAgnostic$Episode_Identifier = as.character(Results_Inflated_TAgnostic$Episode_Identifier)
+for(i in 1:nrow(MS_inflated_summary)){
+  if(!length(which(MS_inflated_summary$Episode_Identifier[i] == 
+                   Results_Inflated_TAgnostic$Episode_Identifier))>0){
+    MS_inflated_summary = MS_inflated_summary[-i,]
+    print('removing')
+  }
+}
+
+Results_Inflated_TAgnostic$ID_True = NA
+Results_Inflated_TAgnostic$First_EpNumber = NA
+Results_Inflated_TAgnostic$Second_EpNumber = NA
+# The ordering has changed so need to be careful about naming
+for(i in 1:nrow(Results_Inflated_TAgnostic)){
+  ind_MS_inflated = which(MS_inflated_summary$Episode_Identifier==Results_Inflated_TAgnostic$Episode_Identifier[i])
+  Results_Inflated_TAgnostic$ID_True[i] = 
+    MS_inflated_summary$ID_True[ind_MS_inflated]
+  Results_Inflated_TAgnostic$First_EpNumber[i] =
+    MS_inflated_summary$First_EpNumber[ind_MS_inflated]
+  Results_Inflated_TAgnostic$Second_EpNumber[i] =
+    MS_inflated_summary$Second_EpNumber[ind_MS_inflated]
+}
+
+
+
+# Iterate through the ones we can calculate in one go
+episodes_full_model = unique(Thetas_full_post_TAgnostic$Episode_Identifier)
+cols_remove = grep('Episode_Identifier', colnames(Thetas_full_post_TAgnostic))
+Thetas_full_post_TAgnostic = Thetas_full_post_TAgnostic[, -cols_remove]
+for(ep in episodes_full_model){
+  ind1 = (MS_pooled_summary$Episode_Identifier==ep)
+  ind2 = rownames(Thetas_full_post_TAgnostic)==ep
+  
+  ## Summaries for relapse
+  L_cols = grep('L',colnames(Thetas_full_post_TAgnostic))
+  MS_pooled_summary$L_upper[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,L_cols]),
+                                             probs=upperCI, na.rm = T)
+  MS_pooled_summary$L_lower[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,L_cols]),
+                                             probs=lowerCI, na.rm = T)
+  MS_pooled_summary$L_median[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,L_cols]),
+                                              probs=0.5, na.rm = T)
+  
+  ## Summaries for recrudescence
+  C_cols = grep('C',colnames(Thetas_full_post_TAgnostic))
+  MS_pooled_summary$C_upper[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,C_cols]),
+                                             probs=upperCI, na.rm = T)
+  MS_pooled_summary$C_lower[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,C_cols]),
+                                             probs=lowerCI, na.rm = T)
+  MS_pooled_summary$C_median[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,C_cols]),
+                                              probs=0.5, na.rm = T)
+  
+  ## Summaries for reinfection
+  I_cols = grep('I',colnames(Thetas_full_post_TAgnostic))
+  MS_pooled_summary$I_upper[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,I_cols]),
+                                             probs=upperCI, na.rm = T)
+  MS_pooled_summary$I_lower[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,I_cols]),
+                                             probs=lowerCI, na.rm = T)
+  MS_pooled_summary$I_median[ind1] = quantile(unlist(Thetas_full_post_TAgnostic[ind2,I_cols]),
+                                              probs=0.5, na.rm = T)
+  
+  # Just going to classify on relapse versus reinfection
+  if(!is.na(MS_pooled_summary$L_upper[ind1])){
+    if(MS_pooled_summary$L_upper[ind1]+MS_pooled_summary$C_upper[ind1] < Epsilon_lower){
+      MS_pooled_summary$L_or_C_state[ind1] = 'I'
+    } else if(MS_pooled_summary$L_lower[ind1]+MS_pooled_summary$C_lower[ind1] > Epsilon_upper){
+      MS_pooled_summary$L_or_C_state[ind1] = 'L'
+    } else {
+      MS_pooled_summary$L_or_C_state[ind1] = 'Uncertain'
+    }
+  } else {
+    MS_pooled_summary$L_or_C_state[ind1] = NA
+  }
+}
+####******** Complex cases *******####################
+# Now iterate through the complex ones
+for(i in 1:length(IDs_remaining)){
+  id = IDs_remaining[i]
+  Doubles_Thetas = filter(Results_Inflated_TAgnostic, ID_True==id)
+  
+  for(ep in unique(Doubles_Thetas$Second_EpNumber)){
+    # indices on the MS_pooled_summary
+    ind1 = which(MS_pooled_summary$ID==id & MS_pooled_summary$Episode==ep)
+    # indices on DOubles thetas: looking for relapse evidence
+    ind2 = which(Doubles_Thetas$Second_EpNumber == ep)
+    # index for recrudescence evidence
+    ind3 = which(Doubles_Thetas$Second_EpNumber == ep &
+                   Doubles_Thetas$First_EpNumber == (ep-1))
+    
+    best_match_relapse = which.max(Doubles_Thetas$L_median[ind2])
+    if(length(best_match_relapse)>0){
+      MS_pooled_summary$L_lower[ind1] = Doubles_Thetas$L_min[ind2[best_match_relapse]]
+      MS_pooled_summary$L_upper[ind1] = Doubles_Thetas$L_max[ind2[best_match_relapse]]
+      MS_pooled_summary$L_median[ind1] = Doubles_Thetas$L_median[ind2[best_match_relapse]]
+      
+      if(length(ind3)>0){
+        MS_pooled_summary$C_lower[ind1] = Doubles_Thetas$C_min[ind3]
+        MS_pooled_summary$C_upper[ind1] = Doubles_Thetas$C_max[ind3]
+        MS_pooled_summary$C_median[ind1] = Doubles_Thetas$C_median[ind3]
+      }
+      MS_pooled_summary$I_lower[ind1] = Doubles_Thetas$I_min[ind2[best_match_relapse]]
+      MS_pooled_summary$I_upper[ind1] = Doubles_Thetas$I_max[ind2[best_match_relapse]]
+      MS_pooled_summary$I_median[ind1] = Doubles_Thetas$I_median[ind2[best_match_relapse]]
+    }
+    if(!is.na(MS_pooled_summary$C_median[ind1])){
+      if(MS_pooled_summary$L_upper[ind1] < MS_pooled_summary$L_lower[ind1]){
+        writeLines(sprintf('Problem with ID %s',id))
+        stop()
+      }
+      if(MS_pooled_summary$L_upper[ind1]+MS_pooled_summary$C_upper[ind1] < Epsilon_lower){
+        MS_pooled_summary$L_or_C_state[ind1] = 'I'
+      } else if(MS_pooled_summary$L_lower[ind1]+MS_pooled_summary$C_lower[ind1] > Epsilon_upper){
+        MS_pooled_summary$L_or_C_state[ind1] = 'L'
+      } else {
+        MS_pooled_summary$L_or_C_state[ind1] = 'Uncertain'
+      }
+    }
+  }
+}
+
+MS_pooled_summary$Drug = MS_pooled_summary$FU = NA
+for(id in MS_pooled_summary$ID){
+  ind = MS_pooled_summary$ID==id
+  MS_pooled_summary$TotalEpisodes[ind] = max(MS_pooled_summary$Episode[ind])
+  MS_pooled_summary$Drug[ind] = as.numeric(
+    Combined_Time_Data$arm_num[Combined_Time_Data$patientid==id][1] == 'CHQ/PMQ') + 2
+  MS_pooled_summary$FU[ind] = Combined_Time_Data$FU_time[Combined_Time_Data$patientid==id][1]
+}
+MS_pooled_summary$Plotting_pch_Values = 
+  as.numeric(mapvalues(MS_pooled_summary$L_or_C_state, from = c('L','Uncertain','I'), to = c(17,15,1)))
+MS_pooled_summary$Plotting_col_Values = 
+  as.numeric(mapvalues(MS_pooled_summary$L_or_C_state, from = c('L','Uncertain','I'), to = 1:3))
+```
+
+
+Coatney plot (genetic data informed only)
+
+```{r CoatneyStylePLot, echo=FALSE}
+# Only the recurrences for which we can compute estimates of recurrence state
+MS_final = filter(MS_pooled_summary, !is.na(L_median))
+MS_final = arrange(MS_final, desc(Drug), desc(FU), desc(TotalEpisodes))
+ids = unique(MS_final$ID)
+
+if(CREATE_PLOTS){
+  ## Time series data colored by genetic STATE: classification
+  mycols_states_bg = c('#FFFFFF',Dark2[4],'#000000') # colors for states - need uncertain ones as well
+  mycols_states_fg = c(Dark2[8],Dark2[4],'#000000') # colors for states - need uncertain ones as well
+  mycols_drugs = brewer.pal(n=3, name = 'Set1')
+  par(mfrow = c(1,1), las=1, bty='n', cex.axis=.3, mar=c(4,0,1,1), family = 'serif')
+  plot(NULL, ylab = '', xlab = '',
+       xlim = c(0,370), 
+       ylim = c(1,length(ids)),
+       xaxt='n', yaxt='n')
+  mtext(text = 'Months from start of study', side = 1, line=2.5, cex=1)
+  axis(1, at = seq(0,370, by=60), labels = seq(0,370, by=60)/30, cex.axis=1)
+  
+  for(i in 1:length(ids)){
+    
+    id = ids[i]
+    ind = which(MS_final$ID==id)
+    
+    # Add the follow up time line
+    lines(c(0,MS_final$FU[ind[1]]), 
+          c(i,i), lty=1, 
+          lwd=.5, col=drug_cols2[MS_final$Drug[ind[1]]])
+    
+    # For highlighting long-latency
+    # Add the follow up time line
+    if(id == 'VHX_235' | id == 'BPD_27'){
+      lines(c(0,MS_final$FU[ind[1]]), 
+            c(i,i), lty = 'dashed', 
+            lwd=.5, col= 'black')
+      
+      cols = mycols_states_fg[MS_final$Plotting_col_Values[ind]]
+      points(MS_final$timeSinceEnrolment[ind], 
+             rep(i,length(ind)), 
+             pch=1,cex = 1.5, 
+             col='black')
+    }
+    # Add points after highlight lines
+    points(MS_final$timeSinceEnrolment[ind], rep(i,length(ind)), 
+           pch=MS_final$Plotting_pch_Values[ind], 
+           bg=mycols_states_bg[MS_final$Plotting_col_Values[ind]],
+           col=mycols_states_fg[MS_final$Plotting_col_Values[ind]], 
+           cex=.6)
+    
+    
+    
+  }
+  lines(x = c(0,0), y = c(0,length(ids)),lwd=3)
+  
+  legend('topright', col = c(mycols_states_fg[c(3,2,1)]), 
+         pch = c(17,15,1), cex = 1, bty = 'n', y.intersp = 0.75, title = 'Classification',
+         legend = c('Relapse or Recrudescence','Uncertain','Reinfection'))
+  
+  legend('top', col = drug_cols2[2:3], 
+         cex = 1, bty = 'n', y.intersp = 0.75, 
+         lty = 1, lwd = 1,
+         legend = c('No PMQ', 'PMQ+'))
+}
+```
+```{r}
+writeLines(sprintf('The Coatney style plot is showing %s recurrences in %s individuals',
+                   nrow(MS_final), length(ids)))
+```
+
+
+Break down the results depending on whether PMQ was received or not:
+```{r, echo=FALSE}
+writeLines(sprintf('There are %s recurrences after PMQ+. The breakdown as %% of classification is as follows:', sum(MS_final$Treatment=='PMQ')))
+round(100*table(MS_final$L_or_C_state[MS_final$Treatment=='PMQ'])/sum(MS_final$Treatment=='PMQ'))
+
+writeLines(sprintf('\nThere are %s recurrences after no PMQ. The breakdown as %% of classification is as follows:', sum(MS_final$Treatment!='PMQ')))
+round(100*table(MS_final$L_or_C_state[MS_final$Treatment!='PMQ'])/sum(MS_final$Treatment!='PMQ'))
+toc()
+```
+
+
