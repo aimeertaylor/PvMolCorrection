@@ -1,4 +1,4 @@
-compute_posterior_pairwise <- function(y, fs, prior = NULL) {
+compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
 
   # Number of episodes 
   n_epi <- length(y)

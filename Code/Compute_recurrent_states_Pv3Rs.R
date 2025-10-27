@@ -15,7 +15,7 @@
 
 rm(list = ls())
 library(Pv3Rs)
-source("compute_posterior_pairwise.R")
+source("compute_posterior_approxjoint.R")
 
 #===============================================================================
 # Get prior estimates based on time-to-event and normalise
@@ -59,13 +59,13 @@ for(pid in paired_data_pids) {
   if (sum_MOIs > 8) { # Don't compute joint if more than 8 genotypes
     TimeToEvent_joint[[pid]] <- NA
     Uniform_joint[[pid]] <- NA
-    TimeToEvent_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD, prior = prior_per_patient)
-    Uniform_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD)    
+    TimeToEvent_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD, prior = prior_per_patient)
+    Uniform_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD)    
   } else { 
     TimeToEvent_joint[[pid]] <- compute_posterior(y, fs_VHX_BPD, prior = prior_per_patient)
     Uniform_joint[[pid]] <- compute_posterior(y, fs_VHX_BPD)
-    TimeToEvent_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD, prior = prior_per_patient)
-    Uniform_pairwise[[pid]] <- compute_posterior_pairwise(y, fs_VHX_BPD)
+    TimeToEvent_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD, prior = prior_per_patient)
+    Uniform_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD)
   }
 }
 tictoc::toc()
