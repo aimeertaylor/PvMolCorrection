@@ -14,7 +14,7 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
   PMQ_timetoevent <- grepl("PMQ", Combined_Time_Data[colnames(TimeToEvent_xy), "arm_num"])
   
   # Plot PMQ Uniform
-  plot_simplex(v_labels = c("Recrudescence", "Relapse", "Reinfection"))
+  plot_simplex(v.labels = c("Recrudescence", "Relapse", "Reinfection"))
   title(main = sprintf("PMQ+ uniform: %s estimates", sum(PMQ_uniform)), 
         line = -0.5)
   for(i in which(PMQ_uniform)){
@@ -27,7 +27,7 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
            legend = c("Jointly modelled data","Pairwise modelled data"))}
    
   # Plot BPD TimeToEvent
-  plot_simplex(v_labels = c("Recrudescence", "Relapse", "Reinfection"))
+  plot_simplex(v.labels = c("Recrudescence", "Relapse", "Reinfection"))
   title(main = sprintf("PMQ+ time-to-event: %s estimates", sum(PMQ_timetoevent)), 
         line = -0.5)
   for(i in which(PMQ_timetoevent)){
@@ -40,7 +40,7 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
          legend = c("Jointly modelled data","Pairwise modelled data"))}
   
   # Plot VHX Uniform
-  plot_simplex(v_labels = c("Recrudescence", "Relapse", "Reinfection"))
+  plot_simplex(v.labels = c("Recrudescence", "Relapse", "Reinfection"))
   title(main = sprintf("no PMQ uniform: %s estimates", sum(!PMQ_uniform)), 
         line = -0.5)
   for(i in which(!PMQ_uniform)){
@@ -53,7 +53,7 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
          legend = c("Jointly modelled data","Pairwise modelled data"))}
   
   # Plot No PMQ TimeToEvent
-  plot_simplex(v_labels = c("Recrudescence", "Relapse", "Reinfection"))
+  plot_simplex(v.labels = c("Recrudescence", "Relapse", "Reinfection"))
   title(main = sprintf("No PMQ time-to-event: %s estimates", sum(!PMQ_timetoevent)), 
         line = -0.5)
   for(i in which(!PMQ_timetoevent)){
