@@ -4,6 +4,8 @@ library(Pv3Rs) # For simplex plots
 load("../RData/results_Pv3Rs.RData") 
 source("plot_VHXBPD_simplex.R") # wrapper to reduced copy-paste across scripts
 
+
+
 #===============================================================================
 # Uniform
 #===============================================================================
@@ -45,6 +47,11 @@ joint = unlist(sapply(names(ls_TimeToEvent_Pv3Rs), function(pid) {
   rep(!is.na(TimeToEvent_joint[pid]), nrec)}))
 TimeToEvent_Pv3Rs <- data.frame(TimeToEvent_Pv3Rs, joint = joint)
 
+# Check same as n_recur_joint_pv3Rs in Analysable_data.R and numbers reported in Overleaf
+sum(Uniform_Pv3Rs$joint)
+sum(TimeToEvent_Pv3Rs$joint)
+length(unlist(Uniform_pairwise))/3
+length(unlist(TimeToEvent_pairwise))/3
 
 #===============================================================================
 # Save marginal results
@@ -54,7 +61,7 @@ save(Uniform_Pv3Rs, TimeToEvent_Pv3Rs, file = "../RData/marg_results_Pv3Rs.RData
 #===============================================================================
 # Plot estimates by PMQ received or not
 #===============================================================================
-png("../Figures/simplex_Pv3Rs.png", width = 9, height = 9, units = "in", res = 300)
+png("../Figures/simplex_Pv3Rs.png", width = 10, height = 7, units = "in", res = 300)
 Uniform_xy <- apply(Uniform_Pv3Rs, 1, function(x) project2D(x[1:3]))
 TimeToEvent_xy <- apply(TimeToEvent_Pv3Rs, 1, function(x) project2D(x[1:3]))
 Uniform_xy <- rbind(Uniform_xy, joint = Uniform_Pv3Rs[,"joint"])

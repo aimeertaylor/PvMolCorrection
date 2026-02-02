@@ -3,6 +3,7 @@ plot_VHXBPD_simplex <- function(Uniform_xy, TimeToEvent_xy){
   # Get treatment info from Combined_Time data because MS_final doesn't contain
   # episode identifiers for 6 recurrences that could not be estimated
   load("../RData/Combined_Time_Event.RData")
+  Combined_Time_Data <- as.data.frame(Combined_Time_Data)
   rownames(Combined_Time_Data) <- paste(Combined_Time_Data$patientid, 
                                         Combined_Time_Data$episode, sep = "_")
   if (!all(colnames(Uniform_xy) %in% rownames(Combined_Time_Data))) stop()

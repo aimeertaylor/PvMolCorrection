@@ -31,7 +31,9 @@ rownames(MS_final) <- MS_final[,"Episode_Identifier"]
 all(MS_final[rownames(thetas_9MS), "C"] == thetas_9MS[,"C50%"], na.rm = T)
 all(MS_final[rownames(thetas_9MS), "L"] == thetas_9MS[,"L50%"], na.rm = T)
 all(MS_final[rownames(thetas_9MS), "I"] == thetas_9MS[,"I50%"], na.rm = T)
-# thetas_9MS inc pids with total MOI 6 where MS_final doesn't, hence na.rm = T abv:
+# thetas_9MS inc pids with total MOI 6 where MS_final doesn't, hence na.rm = T 
+# These three participants are included in thetas_9MS because inference was 
+# attempted but failed; VHX_583, VHX_39, VHX_33 were not tried
 rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(MS_final)] 
 
 #===============================================================================
@@ -48,6 +50,7 @@ Uniform_xy <- rbind(Uniform_xy, joint = 1) # uniform prior not run for pids 4+ e
 TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = colnames(TimeToEvent_xy) %in% rownames(thetas_9MS))
 plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
 if(Figs) dev.off()
+
 
 #===============================================================================
 # Compare median and mean old: mean estimates were generated for recurrences
@@ -73,6 +76,7 @@ for(s in states){
   abline(a = 0, b = 1, lty = "dotted")}
 
 
+
 #===============================================================================
 # Compare Pv3Rs and prototype time-to-Event results: median for both jointly and
 # pairwise modelled data; mean for jointly modelled data only
@@ -86,6 +90,7 @@ all(rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))
 rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))]
 # "VHX_239_2" "VHX_33_2"  "VHX_39_2"  "VHX_461_2" "VHX_52_2"  "VHX_583_2"
 
+# Unless I decide to discuss mean estimates, I will avoid including them in ms plots
 if(Figs) png("../Figures/compare_Pv3Rs_vs_prototype.png", 
              width = 7, height = 10, units = "in", res = 300)
 par(mfcol = c(3,2), mar = par_default$mar)
@@ -97,13 +102,13 @@ for(s in states){
   segments(y0 = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
            y1 = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
            x0 = MS_final[,sprintf("%s_lower", s)], 
-           x1 = MS_final[,sprintf("%s_upper", s)], col = "lightgrey")
+           x1 = MS_final[,sprintf("%s_upper", s)], col = "darkgrey")
   points(x = MS_final[,sprintf("%s_median", s)], 
          y = TimeToEvent_Pv3Rs[rownames(MS_final), s], 
-         pch = 21, bg = "white", col = "lightgrey")
-  points(x = thetas_9MS[, s], 
-         y = TimeToEvent_Pv3Rs[rownames(thetas_9MS), s], 
-         pch = 20, cex = 0.5)
+         pch = 21, bg = "white", col = "darkgrey")
+  # points(x = thetas_9MS[, s], 
+  #        y = TimeToEvent_Pv3Rs[rownames(thetas_9MS), s], 
+  #        pch = 20, cex = 0.5)
   
   # Extract and annotate big differences 
   diffs <- abs(MS_final[,sprintf("%s_median", s)] 
@@ -117,6 +122,7 @@ for(s in states){
   }
 } 
 
+
 #===============================================================================
 # Compare Pv3Rs and prototype uniform results: median and mean for joint only
 #===============================================================================
@@ -129,13 +135,13 @@ for(s in states){
   segments(y0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
            y1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
            x0 = thetas_9MS_Tagnostic[, paste0(s, "2.5%")], 
-           x1 = thetas_9MS_Tagnostic[, paste0(s, "97.5%")], col = "lightgrey")
+           x1 = thetas_9MS_Tagnostic[, paste0(s, "97.5%")], col = "darkgrey")
   points(x = thetas_9MS_Tagnostic[, paste0(s, "50%")], 
          y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
-         pch = 21, bg = "white", col = "lightgrey")
-  points(x = thetas_9MS_Tagnostic[, s], 
-         y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
-         pch = 20, cex = 0.5)
+         pch = 21, bg = "white", col = "darkgrey")
+  # points(x = thetas_9MS_Tagnostic[, s], 
+  #        y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
+  #        pch = 20, cex = 0.5)
   
   # Extract and annotate big differences: 3 diffs are NA 
   diffs <- abs(thetas_9MS_Tagnostic[, paste0(s, "50%")] - 
@@ -151,6 +157,14 @@ for(s in states){
 if(Figs) dev.off()
 
 #===============================================================================
+# Check counts joint (mean prototype available) versus pairwise or joint
+#===============================================================================
+length(rownames(MS_final))
+length(rownames(thetas_9MS)[!is.na(thetas_9MS$`C50%`)]) 
+length(rownames(thetas_9MS_Tagnostic)[!is.na(thetas_9MS_Tagnostic$`C50%`)]) 
+
+
+#===============================================================================
 # Results and data plots for discrepant estimates: In summary, 2 of 9 large
 # deviations are undesirable, VHX_91_2 and VHX_56_2, both seems to be cases of
 # half sibs
@@ -158,42 +172,100 @@ if(Figs) dev.off()
 pids_big_diffs_TimeToEvent <- apply(do.call(rbind, strsplit(big_diffs_TimeToEvent, split = "_"))[,1:2], 
                                     1, paste, collapse = "_")
 pids_big_diffs_Uniform <- apply(do.call(rbind, strsplit(big_diffs_Uniform, split = "_"))[,1:2], 
-                                    1, paste, collapse = "_")
-intersect(big_diffs_TimeToEvent, big_diffs_Uniform)
-unique(c(big_diffs_TimeToEvent, big_diffs_Uniform))
+                                1, paste, collapse = "_")
+intersect(big_diffs_TimeToEvent, big_diffs_Uniform) # Two are the same 
+unique(c(big_diffs_TimeToEvent, big_diffs_Uniform)) # Nine unique 
 
+#===============================================================================
+# Visual inference for discrepant cases; summarised in ms figure below
+#===============================================================================
 
-# Plot data and inspect estimates for the participants with estimates that diffzer
+# Plot data and inspect estimates for the participants with estimates that differ
 plot_data(ys = ys_VHX_BPD[pids_big_diffs_TimeToEvent], fs = fs_VHX_BPD)
 MS_final[big_diffs_TimeToEvent, c("C_median", "L_median", "I_median")] 
-TimeToEvent_Pv3Rs[big_diffs_TimeToEvent,] # BPD more reasonable; VHX: half sib missclassification 
+TimeToEvent_Pv3Rs[big_diffs_TimeToEvent,] 
 
 # VHX_56_2: Pv3Rs closer to reinfection, seems to be a case of half-sib misspec. 
-# VHX_419_6: Pv3Rs closer to 50/50 relapse/reinfection, seems reasonable
-# BPD_562_2: Pv3Rs closer to relapse, seems reasonable 
 # BPD_253_3: Pv3Rs closer to reinfection, seems reasonable 
+# VHX_419_6: Pv3Rs closer to reinfection, seems reasonable
+# BPD_562_2: Pv3Rs closer to relapse, seems reasonable
 
 # Plot data and inspect estimates for the participants with estimates that differ
 plot_data(ys = ys_VHX_BPD[pids_big_diffs_Uniform], fs = fs_VHX_BPD)
 thetas_9MS_Tagnostic[big_diffs_Uniform, c("C50%", "L50%", "I50%")] 
-Uniform_Pv3Rs[big_diffs_Uniform,] # BPD more reasonable; VHX: half sib missclassification 
+Uniform_Pv3Rs[big_diffs_Uniform,] 
 
-
+# VHX_56_2: Pv3Rs closer to reinfection, seems to be a case of half-sib misspec. 
 # BPD_253_3: Pv3Rs closer to reinfection, not unreasonable
 # BPD_70_2: Pv3Rs closer to reinfection, not unreasonable
 # VHX_214_2: Pv3Rs closer to reinfection, not unreasonable
 # VHX_298_2: Pv3Rs closer to reinfection, not unreasonable
 # VHD_452_2: Pv3Rs closer to reinfection, not unreasonable
-# VHX_56_2: Pv3Rs closer to reinfection, seems to be a case of half-sib misspec. 
 # VHX_91_2: Pv3Rs closer to reinfection, seems to be a case of half-sib misspec. 
 
 
+#===============================================================================
+# MS quality figure 
+#===============================================================================
+pids <- unique(c(pids_big_diffs_Uniform, pids_big_diffs_TimeToEvent))
+eids_both <- intersect(big_diffs_TimeToEvent, big_diffs_Uniform)
+
+# Extract all episodes for pids with big difference
+episodes <- unname(unlist(sapply(pids, function(pid) {
+  sapply(names(ys_VHX_BPD[[pid]]), function(epi) {
+    paste(pid, epi, sep = "_")})})))
+
+# Extract probabilities for all recurrences in pids with at a discrepant recurrence
+all_recs_pids_big_diff_Uniform <- unlist(sapply(pids_big_diffs_Uniform, function(pid) paste(pid, names(ys_VHX_BPD[[pid]])[-1], sep = "_")))
+all_recs_pids_big_diff_TimeToEvent <- unlist(sapply(pids_big_diffs_TimeToEvent, function(pid) paste(pid, names(ys_VHX_BPD[[pid]])[-1], sep = "_")))
+
+# Get reinfection probability
+I_Pv3Rs_Uniform <- Uniform_Pv3Rs[all_recs_pids_big_diff_Uniform, "I"]
+I_Pv3Rs_TimeToEvent <- TimeToEvent_Pv3Rs[all_recs_pids_big_diff_TimeToEvent, "I"]
+I_proto_Uniform <- thetas_9MS_Tagnostic[all_recs_pids_big_diff_Uniform, "I50%"]
+I_proto_TimeToEvent <- MS_final[all_recs_pids_big_diff_TimeToEvent, "I_median"]
+names(I_Pv3Rs_Uniform) <- names(I_proto_Uniform) <- all_recs_pids_big_diff_Uniform
+names(I_Pv3Rs_TimeToEvent) <- names(I_proto_TimeToEvent) <- all_recs_pids_big_diff_TimeToEvent
+
+no_episodes_per_pid <- sapply(ys_VHX_BPD[pids], length)
+text_Pv3Rs <- text_proto <- rep("", length(episodes)) 
+names(text_Pv3Rs) <- names(text_proto) <- episodes
+text_Pv3Rs[all_recs_pids_big_diff_Uniform] <- round(I_Pv3Rs_Uniform, 2)*100 
+text_Pv3Rs[all_recs_pids_big_diff_TimeToEvent] <- round(I_Pv3Rs_TimeToEvent, 2)*100 
+text_proto[all_recs_pids_big_diff_Uniform] <- round(I_proto_Uniform, 2)*100
+text_proto[all_recs_pids_big_diff_TimeToEvent] <- round(I_proto_TimeToEvent, 2)*100
+text_Pv3Rs[eids_both] <- paste(round(I_Pv3Rs_Uniform[eids_both], 2)*100, 
+                               round(I_Pv3Rs_TimeToEvent[eids_both], 2)*100, sep = " / ")
+text_proto[eids_both] <- paste(round(I_proto_Uniform[eids_both], 2)*100, 
+                               round(I_proto_TimeToEvent[eids_both], 2)*100, sep = " / ")
+text_col <- unlist(sapply(1:length(pids), function(i){
+  if(i %% 2 == 1) {
+    rep("white", no_episodes_per_pid[i])
+  } else {
+    rep("black", no_episodes_per_pid[i])
+  }}))
+main_mar <- c(1.5, 3.5, 1.5, 3.5)
+z <- 1/(2*length(episodes)) # See text x placement
+
 # Plot for ms
-if(Figs) png("../Figures/data_Pv3Rs_vs_prototype.png",
-    width = 7, height = 7, units = "in", res = 300)
-plot_data(ys = ys_VHX_BPD[unique(c(pids_big_diffs_Uniform, 
-                                   pids_big_diffs_TimeToEvent))], fs = fs_VHX_BPD)
-thetas_9MS_Tagnostic[big_diffs_Uniform, c("C50%", "L50%", "I50%")] 
-Uniform_Pv3Rs[big_diffs_Uniform,] # BPD more reasonable; VHX: half sib missclassification 
+if(Figs) png("../Figures/data_Pv3Rs_vs_prototype.png", width = 10, height = 7, units = "in", res = 300)
+par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
+plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar)
+par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
+text(y = rep(0.01, length(episodes)),
+     x = seq(z, 1-z, length.out = length(episodes)), 
+     labels = text_Pv3Rs, cex = 0.6, col = text_col)
+text(y = rep(0.04, length(episodes)),
+     x = seq(z, 1-z, length.out = length(episodes)), 
+     labels = text_proto, cex = 0.6, col = "black")
+points(y = rep(-0.01, length(unique(c(big_diffs_TimeToEvent, big_diffs_Uniform)))),
+       x = seq(z, 1-z, length.out = length(episodes))[episodes %in% unique(c(big_diffs_TimeToEvent, big_diffs_Uniform))], 
+       pch = 17, cex = 0.6) 
 if(Figs) dev.off()
+
+# Checking BPD_562 uniform and prior:
+load("../RData/prior_estimates.RData")
+Uniform_Pv3Rs["BPD_562_2", "L"]
+thetas_9MS_Tagnostic["BPD_562_2",]
+prior["BPD_562_2",]
 

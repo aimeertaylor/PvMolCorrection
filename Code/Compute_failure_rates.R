@@ -193,5 +193,10 @@ text(x = patient_summaries$Failure_prototype_median[ind_all][big_diffs[ind_all]]
      pos = c(2,4,4,4))
 legend("left", pch = 16:17, bty = "n",
        legend = c("BPD study participant", "VHX study participant"), )
+abline(a = 0, b = 1, lty = "dotted")
 if(Figs) dev.off()
 
+# Bland-Altman
+S1 <- patient_summaries$Failure_prototype_median[ind_all]
+S2 <- patient_summaries$Failure_Pv3Rs[ind_all]
+plot(x = (S1 + S2)/2, y = (S1 - S2))

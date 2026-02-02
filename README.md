@@ -2,16 +2,18 @@
 
 *Plasmodium vivax* molecular correction using Pv3Rs: a re-analysis of *P. vivax*
 genetic data from the Vivax History (VHX) trial
-([Chu et al. Clin. Infect. Dis. 67 (2018)](https://academic.oup.com/cid/article/67/10/1543/5034800)) and 
-the Best Primaquine Dose trial 
+([Chu et al. Clin. Infect. Dis. 67 (2018)](https://academic.oup.com/cid/article/67/10/1543/5034800)) 
+and the Best Primaquine Dose trial 
 ([Chu et al. Clin. Infect. Dis. 68 (2018)](https://academic.oup.com/cid/article/68/8/1311/5079011)).
 The original analysis on which this re-analysis is based is described in 
 [Taylor & Watson et al. Nat. Commun. 10 (2019)](https://www.nature.com/articles/s41467-019-13412-x). 
 The re-analysis uses original input and output in
 `jwatowatson-RecurrentVivax-4870715`, which was downloaded from
-[zenodo.org/records/3368828](https://zenodo.org/records/3368828), and from `MS_Final`, which
-was saved as `MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd` in `RData/`
-after running `Pooled_Analysis.Rmd` in `jwatowatson-RecurrentVivax-4870715/Pooled_Final_Analysis/`.
+[zenodo.org/records/3368828](https://zenodo.org/records/3368828), and from 
+`MS_Final`, which was saved as 
+`MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd` in `RData/`
+after running `Pooled_Analysis.Rmd` in 
+`jwatowatson-RecurrentVivax-4870715/Pooled_Final_Analysis/`.
 
 The following steps re-produce the re-analysis thus far:  
 
@@ -21,7 +23,7 @@ The following steps re-produce the re-analysis thus far:
  
 2) Run `Analysable_data.R` to generate
     - `tab_MOIs.csv` (used to create `tab_MOIs_edited.png`)
-    - `data_paired.png`
+    - `data_repeat_episode.png`
     - `data_unestimatable.png`
 
 3) Run `Extract_and_plot_Pv3Rs.R` to generate
