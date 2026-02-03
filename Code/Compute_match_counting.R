@@ -24,17 +24,17 @@ if (!all(names(matches_n) == row.names(Uniform_Pv3Rs))) stop()
 plot(x = matches_p, y = Uniform_Pv3Rs[,"L"], 
      cex = matches_n/9,
      xlab = "Match proportion", 
-     ylab = "Posterior probability (based on genetic data alone)")
+     ylab = "Posterior relapse probability (based on genetic data alone)")
 
 plot(x = matches_p, y = Uniform_Pv3Rs[,"C"], 
      cex = matches_n/9,
      xlab = "Match proportion", 
-     ylab = "Posterior probability (based on genetic data alone)")
+     ylab = "Posterior recrudescence probability (based on genetic data alone)")
 
 plot(x = matches_p, y = Uniform_Pv3Rs[,"I"], # Use this plot for diagnosis
      cex = matches_n/9,
      xlab = "Match proportion", 
-     ylab = "Posterior probability (based on genetic data alone)")
+     ylab = "Posterior reinfection probability (based on genetic data alone)")
 # Annotate already identified cases
 
 half_sibs <- c("VHX_39_2", "VHX_56_2", "VHX_91_2", "VHX_113_6", "VHX_329_4", "VHX_450_8", 
@@ -52,3 +52,4 @@ for(suspect_pid in suspect_pids) {
         collapse = " "))
 }
 
+plot_data(ys = ys_VHX_BPD[suspect_pids], fs = fs_VHX_BPD)
