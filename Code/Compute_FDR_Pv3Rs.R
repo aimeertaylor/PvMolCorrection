@@ -1,9 +1,9 @@
 rm(list = ls())
 library(Pv3Rs) # For plot_data
 library(tictoc)
-Run_data <- FALSE # Run data formating versus loading pre-formatted data
-Run_probs <- FALSE # Run posterior probability computation (2 hrs) versus loading pre-computed results
-Run_irred_prob <- FALSE # Run irreducible probability computation 
+Run_data <- F # Run data formating versus loading pre-formatted data
+Run_probs <- F # Run posterior probability computation (2 hrs) versus loading pre-computed results
+Run_irred_prob <- F # Run irreducible probability computation 
 tot_MOI_lim = 8 # Upper limit on computation
 n_mark_lim = 2 # Lower limit on posterior computation
 #===============================================================================
