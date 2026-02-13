@@ -8,7 +8,7 @@
 ################################################################################
 
 # List marker and per-marker allele names 
-markers <- names(alleles_per_marker)
+markers <- names(fs_VHX_BPD)
 alleles_per_marker <- sapply(fs_VHX_BPD, names)
 
 # Function to convert per-episode data formatted for pv3Rs (categorical lists
@@ -52,6 +52,8 @@ genetic_proximity <- function(y, type = "rhat_one"){ # per participant
             rhat <- dcifer::ibdPair(pair, cois, afreq, M = 1)            
           } else if (type == "rhat_avg") { # Quick approximate average relatedness
             rhat <- unique(dcifer::ibdEstM(pair, cois, afreq, equalr = TRUE)) 
+          } else if (type == "rhat_tot") {# Quick approximate total relatedness
+            rhat <- sum(dcifer::ibdEstM(pair, cois, afreq, equalr = TRUE)) 
           }
         }
         return(list(prev_epi = episode, rhat = rhat, nmarks = nmarks))

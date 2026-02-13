@@ -39,9 +39,16 @@ The following steps re-produce the re-analysis thus far:
  - `compare_failure_rates.png`
  
 6) Run `Code/Compute_FDR_Pv3Rs.R` to generate false discovery rates and 
- - `RData/ys_FRD.RData`
- - `RData/probs_FDR.RData`
- - `RData/irred_probs_FDR.RData`
+ - `RData/ys_null.RData`
+ - `RData/probs_null.RData`
+ - `RData/min_probs_null.RData`
+ 
+7) Run `Code/Compute_null.R` to generate 
+ - `RData/nulls.RData`
+ - `RData/quantiles_nulls.RData`
+	
+8) Run `Code/Compute_genetic_proximity.R` to generate plots of Pv3R failure against genetic proximity
+XXX
 	
 6) Run `Compare_joint_pwise_Pv3Rs.R` to generate 
     - `compare_joint_vs_pwise.png`
