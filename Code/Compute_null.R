@@ -8,7 +8,7 @@ load("../RData/ys_null.RData")
 source("genetic_proximity.R")
 source("match_counting.R")
 load("../RData/probs_null.RData") # Pv3Rs probabilities for null data
-alphas <- c(0.05) # Set equal to the FDR of Pv3Rs
+alphas <- c(0.05, 0.01) # Set equal to the FDR of Pv3Rs
 run_null <- F
 
 # For each pair compute number of markers with allele data on both episodes:

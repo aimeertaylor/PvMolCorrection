@@ -110,6 +110,10 @@ if(Figs) dev.off()
 pids <- unique(unlist(pids_big_diff)) # All pids with a probability discrepant recurrence
 unlist(eids_big_diff) == unique(unlist(eids_big_diff)) # No duplicate pids 
 
+# Save for genetic proximity
+eids_joint_pwise <- sort(unlist(eids_big_diff))
+save(eids_joint_pwise, file = "../RData/big_diffs_joint_pairwise.RData")
+
 # Extract all episodes for pids with big difference
 episodes <- unname(unlist(sapply(pids, function(pid) {
   sapply(names(ys_VHX_BPD[[pid]]), function(epi) {

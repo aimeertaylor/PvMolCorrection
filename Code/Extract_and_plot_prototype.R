@@ -11,7 +11,6 @@
 # time-to-event posterior and the posterior on allele frequencies. The results
 # are generated using data modelled jointly or pairwise.
 ################################################################################
-
 rm(list = ls())
 library(Pv3Rs)
 Figs <- TRUE
@@ -90,10 +89,40 @@ all(rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))
 rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_final))]
 # "VHX_239_2" "VHX_33_2"  "VHX_39_2"  "VHX_461_2" "VHX_52_2"  "VHX_583_2"
 
-# Unless I decide to discuss mean estimates, I will avoid including them in ms plots
+#===============================================================================
+# Compare Pv3Rs and prototype uniform results: median and mean for joint only
+# Unless it is decided to discuss mean estimates, avoid including them in ms plots
+#===============================================================================
 if(Figs) png("../Figures/compare_Pv3Rs_vs_prototype.png", 
              width = 7, height = 10, units = "in", res = 300)
 par(mfcol = c(3,2), mar = par_default$mar)
+for(s in states){
+  
+  plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype",
+       bty = "n", main = paste0(names(which(states == s)), ": uniform prior"))
+  abline(a = 0, b = 1, lty = "dotted")
+  segments(y0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
+           y1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
+           x0 = thetas_9MS_Tagnostic[, paste0(s, "2.5%")], 
+           x1 = thetas_9MS_Tagnostic[, paste0(s, "97.5%")], col = "darkgrey")
+  points(x = thetas_9MS_Tagnostic[, paste0(s, "50%")], 
+         y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
+         pch = 21, bg = "white", col = "darkgrey")
+  # points(x = thetas_9MS_Tagnostic[, s], 
+  #        y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
+  #        pch = 20, cex = 0.5)
+  
+  # Extract and annotate big differences: 3 diffs are NA 
+  diffs <- abs(thetas_9MS_Tagnostic[, paste0(s, "50%")] - 
+                 Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s])
+  big_diffs_Uniform <- rownames(thetas_9MS_Tagnostic)[which(diffs > big_diff)]
+  if(length(big_diffs_Uniform) > 0) {
+    text(y = Uniform_Pv3Rs[big_diffs_Uniform, s], 
+         x = thetas_9MS_Tagnostic[big_diffs_Uniform, paste0(s, "50%")], 
+         cex = 0.75, labels = big_diffs_Uniform, 
+         pos = if(s == "I") c(3,1,1,2,4,4,4) else c(1,3,3,4,2,2,2))  
+  }
+}
 for(s in states){
   
   plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype", 
@@ -123,37 +152,7 @@ for(s in states){
 } 
 
 
-#===============================================================================
-# Compare Pv3Rs and prototype uniform results: median and mean for joint only
-#===============================================================================
 
-for(s in states){
-  
-  plot(NULL, xlim = c(0,1), ylim = c(0,1), ylab = "Pv3Rs", xlab = "Prototype",
-       bty = "n", main = paste0(names(which(states == s)), ": uniform prior"))
-  abline(a = 0, b = 1, lty = "dotted")
-  segments(y0 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
-           y1 = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
-           x0 = thetas_9MS_Tagnostic[, paste0(s, "2.5%")], 
-           x1 = thetas_9MS_Tagnostic[, paste0(s, "97.5%")], col = "darkgrey")
-  points(x = thetas_9MS_Tagnostic[, paste0(s, "50%")], 
-         y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
-         pch = 21, bg = "white", col = "darkgrey")
-  # points(x = thetas_9MS_Tagnostic[, s], 
-  #        y = Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s], 
-  #        pch = 20, cex = 0.5)
-  
-  # Extract and annotate big differences: 3 diffs are NA 
-  diffs <- abs(thetas_9MS_Tagnostic[, paste0(s, "50%")] - 
-                 Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic), s])
-  big_diffs_Uniform <- rownames(thetas_9MS_Tagnostic)[which(diffs > big_diff)]
-  if(length(big_diffs_Uniform) > 0) {
-    text(y = Uniform_Pv3Rs[big_diffs_Uniform, s], 
-         x = thetas_9MS_Tagnostic[big_diffs_Uniform, paste0(s, "50%")], 
-         cex = 0.75, labels = big_diffs_Uniform, 
-         pos = if(s == "I") c(3,1,1,2,4,4,4) else c(1,3,3,4,2,2,2))  
-  }
-}
 if(Figs) dev.off()
 
 #===============================================================================
@@ -210,6 +209,10 @@ Uniform_Pv3Rs[big_diffs_Uniform,]
 pids <- unique(c(pids_big_diffs_Uniform, pids_big_diffs_TimeToEvent))
 eids_both <- intersect(big_diffs_TimeToEvent, big_diffs_Uniform)
 
+# Save for genetic proximity
+eids_proto_pv3Rs <- c(TimeToEvent = big_diffs_TimeToEvent, Uniform = big_diffs_Uniform)
+save(eids_proto_pv3Rs, file = "../RData/big_diffs_pv3rs_prototype.RData")
+
 # Extract all episodes for pids with big difference
 episodes <- unname(unlist(sapply(pids, function(pid) {
   sapply(names(ys_VHX_BPD[[pid]]), function(epi) {
@@ -219,25 +222,25 @@ episodes <- unname(unlist(sapply(pids, function(pid) {
 all_recs_pids_big_diff_Uniform <- unlist(sapply(pids_big_diffs_Uniform, function(pid) paste(pid, names(ys_VHX_BPD[[pid]])[-1], sep = "_")))
 all_recs_pids_big_diff_TimeToEvent <- unlist(sapply(pids_big_diffs_TimeToEvent, function(pid) paste(pid, names(ys_VHX_BPD[[pid]])[-1], sep = "_")))
 
-# Get reinfection probability
-I_Pv3Rs_Uniform <- Uniform_Pv3Rs[all_recs_pids_big_diff_Uniform, "I"]
-I_Pv3Rs_TimeToEvent <- TimeToEvent_Pv3Rs[all_recs_pids_big_diff_TimeToEvent, "I"]
-I_proto_Uniform <- thetas_9MS_Tagnostic[all_recs_pids_big_diff_Uniform, "I50%"]
-I_proto_TimeToEvent <- MS_final[all_recs_pids_big_diff_TimeToEvent, "I_median"]
-names(I_Pv3Rs_Uniform) <- names(I_proto_Uniform) <- all_recs_pids_big_diff_Uniform
-names(I_Pv3Rs_TimeToEvent) <- names(I_proto_TimeToEvent) <- all_recs_pids_big_diff_TimeToEvent
+# Get relapse probability
+L_Pv3Rs_Uniform <- Uniform_Pv3Rs[all_recs_pids_big_diff_Uniform, "L"]
+L_Pv3Rs_TimeToEvent <- TimeToEvent_Pv3Rs[all_recs_pids_big_diff_TimeToEvent, "L"]
+L_proto_Uniform <- thetas_9MS_Tagnostic[all_recs_pids_big_diff_Uniform, "L50%"]
+L_proto_TimeToEvent <- MS_final[all_recs_pids_big_diff_TimeToEvent, "L_median"]
+names(L_Pv3Rs_Uniform) <- names(L_proto_Uniform) <- all_recs_pids_big_diff_Uniform
+names(L_Pv3Rs_TimeToEvent) <- names(L_proto_TimeToEvent) <- all_recs_pids_big_diff_TimeToEvent
 
 no_episodes_per_pid <- sapply(ys_VHX_BPD[pids], length)
 text_Pv3Rs <- text_proto <- rep("", length(episodes)) 
 names(text_Pv3Rs) <- names(text_proto) <- episodes
-text_Pv3Rs[all_recs_pids_big_diff_Uniform] <- round(I_Pv3Rs_Uniform, 2)*100 
-text_Pv3Rs[all_recs_pids_big_diff_TimeToEvent] <- round(I_Pv3Rs_TimeToEvent, 2)*100 
-text_proto[all_recs_pids_big_diff_Uniform] <- round(I_proto_Uniform, 2)*100
-text_proto[all_recs_pids_big_diff_TimeToEvent] <- round(I_proto_TimeToEvent, 2)*100
-text_Pv3Rs[eids_both] <- paste(round(I_Pv3Rs_Uniform[eids_both], 2)*100, 
-                               round(I_Pv3Rs_TimeToEvent[eids_both], 2)*100, sep = " / ")
-text_proto[eids_both] <- paste(round(I_proto_Uniform[eids_both], 2)*100, 
-                               round(I_proto_TimeToEvent[eids_both], 2)*100, sep = " / ")
+text_Pv3Rs[all_recs_pids_big_diff_Uniform] <- round(L_Pv3Rs_Uniform, 2)*100 
+text_Pv3Rs[all_recs_pids_big_diff_TimeToEvent] <- round(L_Pv3Rs_TimeToEvent, 2)*100 
+text_proto[all_recs_pids_big_diff_Uniform] <- round(L_proto_Uniform, 2)*100
+text_proto[all_recs_pids_big_diff_TimeToEvent] <- round(L_proto_TimeToEvent, 2)*100
+text_Pv3Rs[eids_both] <- paste(round(L_Pv3Rs_Uniform[eids_both], 2)*100, 
+                               round(L_Pv3Rs_TimeToEvent[eids_both], 2)*100, sep = "/")
+text_proto[eids_both] <- paste(round(L_proto_Uniform[eids_both], 2)*100, 
+                               round(L_proto_TimeToEvent[eids_both], 2)*100, sep = "/")
 text_col <- unlist(sapply(1:length(pids), function(i){
   if(i %% 2 == 1) {
     rep("white", no_episodes_per_pid[i])
@@ -254,10 +257,10 @@ plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = mai
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
 text(y = rep(0.01, length(episodes)),
      x = seq(z, 1-z, length.out = length(episodes)), 
-     labels = text_Pv3Rs, cex = 0.6, col = text_col)
+     labels = text_Pv3Rs, cex = 0.5, col = text_col)
 text(y = rep(0.04, length(episodes)),
      x = seq(z, 1-z, length.out = length(episodes)), 
-     labels = text_proto, cex = 0.6, col = "black")
+     labels = text_proto, cex = 0.5, col = "black")
 points(y = rep(-0.01, length(unique(c(big_diffs_TimeToEvent, big_diffs_Uniform)))),
        x = seq(z, 1-z, length.out = length(episodes))[episodes %in% unique(c(big_diffs_TimeToEvent, big_diffs_Uniform))], 
        pch = 17, cex = 0.6) 
