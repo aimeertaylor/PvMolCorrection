@@ -143,7 +143,7 @@ outlier_u <- c(proto = c("VHX_56_2", "VHX_91_2"), # pv3rs vs proto
                uncom = "VHX_39_2", # uncomputable using the prototype
                pwise = c("VHX_113_6", "VHX_450_8", "VHX_489_4", "VHX_529_4", "VHX_532_4")) 
 
-outlier_t <- c(proto = c("VHX_56_2", "BPD_253_3"), pwise = c("VHX_419_6")) 
+outlier_t <- c(proto = c("VHX_56_2")) 
 
 plot(x = rhats_tot, y = 1-Uniform_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
@@ -161,67 +161,66 @@ plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"],
      ylab = "Relapse plus recrudescence\n probability (informative prior)")
 abline(v = q_tot["95%"], lty = "dashed", col = "red")
 text(x = rhats_tot[outlier_t], y = 1-TimeToEvent_Pv3Rs[outlier_t,"I"], 
-     labels = outlier_t, pos = 3, cex = 0.5)
+     labels = outlier_t, pos = 4, cex = 0.5)
 
-plot(x = rhats_tot[names(PMQ[PMQ])], y = 1-Uniform_Pv3Rs[names(PMQ[PMQ]),"I"], 
-     cex = rhats_tot_n[names(PMQ[PMQ])]/9, bty = "n", pch = 17, 
-     xlim = range(rhats_tot),
+
+X <- Uniform_Pv3Rs[,c("C","L","I")]
+X[outlier_u[grepl("pwise", names(outlier_u))],] <-
+  Uniform_pwise[outlier_u[grepl("pwise", names(outlier_u))], c("C","L","I")]
+plot(x = rhats_tot, y = 1-X[names(rhats_tot),"I"], 
+     cex = rhats_tot_n/9, bty = "n", 
+     pch = PMQ[names(rhats_tot)] + 16,
+     col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
      xlab = "Genetic proximity: total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (uniform prior)")
 abline(v = q_tot["95%"], lty = "dashed", col = "red")
-text(x = rhats_tot[outlier_t[outlier_t %in% names(PMQ[PMQ])]], 
-     y = 1-Uniform_Pv3Rs[outlier_t[outlier_t %in% names(PMQ[PMQ])],"I"], 
-     labels = outlier_t[outlier_t %in% names(PMQ[PMQ])], pos = 4, cex = 0.5)
-outlier <- names(which(rhats_tot[names(PMQ[PMQ])] > 0.4 & 
-                         (1-Uniform_Pv3Rs[names(PMQ[PMQ]), "I"]) < 0.8))
-text(x = rhats_tot[outlier], y = 1-Uniform_Pv3Rs[outlier,"I"], 
-     labels = outlier, pos = 4, cex = 0.5)
+outlier_PMQ <- names(which(rhats_tot > 0.45 & (1-X[names(rhats_tot),"I"]) < 0.1 & 
+                       PMQ[names(rhats_tot)]))
+text(x = rhats_tot[outlier_PMQ], y = 1-Uniform_Pv3Rs[outlier_PMQ,"I"], 
+     labels = outlier_PMQ, pos = 4, cex = 0.5)
+arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ], 
+         y0 = 1-Uniform_Pv3Rs[outlier_PMQ,"I"] + 0.025, 
+         y1 = 0.975, length = 0.05)
 
-
-plot(x = rhats_tot[names(PMQ[PMQ])], y = 1-TimeToEvent_Pv3Rs[names(PMQ[PMQ]),"I"], 
-     cex = rhats_tot_n[names(PMQ[PMQ])]/9, bty = "n", pch = 17, 
-     xlim = range(rhats_tot),
+plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
+     cex = rhats_tot_n/9, bty = "n", 
+     pch = PMQ[names(rhats_tot)] + 16, 
+     col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
      xlab = "Genetic proximity: total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (uniform prior)")
+     ylab = "Relapse plus recrudescence\n probability (informative prior)")
 abline(v = q_tot["95%"], lty = "dashed", col = "red")
-text(x = rhats_tot[outlier_t[outlier_t %in% names(PMQ[PMQ])]], 
-     y = 1-TimeToEvent_Pv3Rs[outlier_t[outlier_t %in% names(PMQ[PMQ])],"I"], 
-     labels = outlier_t[outlier_t %in% names(PMQ[PMQ])], pos = 4, cex = 0.5)
-text(x = rhats_tot[outlier], y = 1-TimeToEvent_Pv3Rs[outlier,"I"], 
-     labels = outlier, pos = 4, cex = 0.5)
-
+text(x = rhats_tot[outlier_PMQ], y = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"], 
+     labels = outlier_PMQ, pos = 4, cex = 0.5)
+arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ], 
+       y0 = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"] + 0.025, 
+       y1 = 0.975, length = 0.05)
 
 #===============================================================================
-# Numbers of ms: 
+# Numbers for ms: 
 #===============================================================================
 # Average probability of relapse among reinfection-classified 
-sum(Uniform_Pv3Rs[which(rhats_tot <= q_tot), "L"])/sum(rhats_one <= q_one)
-sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot), "L"])/sum(rhats_one <= q_one)
+sum(Uniform_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "L"])/sum(rhats_tot <= q_tot["95%"])
+sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "L"])/sum(rhats_tot <= q_tot["95%"])
 
 # Aside: average probability of recrudescence among reinfection-classified 
-sum(Uniform_Pv3Rs[which(rhats_tot <= q_tot), "C"])/sum(rhats_one <= q_one)
-sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot), "C"])/sum(rhats_one <= q_one)
+sum(Uniform_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "C"])/sum(rhats_one <= q_one["95%"])
+sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "C"])/sum(rhats_one <= q_one["95%"])
 
-# Proportion / probability of "relapse or recrudescence" recurrences among
-# recurrences in PMQ treated participants:
-sum((1-Uniform_Pv3Rs[,"I"])*PMQ[rownames(Uniform_Pv3Rs)])/sum(PMQ[rownames(Uniform_Pv3Rs)])
-sum((1-TimeToEvent_Pv3Rs[,"I"])*PMQ[rownames(TimeToEvent_Pv3Rs)])/sum(PMQ[rownames(TimeToEvent_Pv3Rs)])
-sum((rhats_tot > q_tot)*PMQ[names(rhats_tot)])/sum(PMQ[names(rhats_tot)])
+# Average probability of reinfection among relapse/recrudescence classified
+sum(Uniform_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
+sum(X[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
+sum(TimeToEvent_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
 
-# Proportion / probability of "relapse or recrudescence" recurrences among
-# reinfection-classified recurrences in PMQ treated participants:
-sum((1-Uniform_Pv3Rs[,"I"])*PMQ[pids]*(rhats_one <= q_one))/sum(PMQ[pids]*(rhats_one <= q_one))
-sum((1-TimeToEvent_Pv3Rs[,"I"])*PMQ[pids]*(rhats_one <= q_one))/sum(PMQ[pids])
 
 #===============================================================================
-# Inspect data on outliers: 
+# Inspect data on major outliers: 
 #===============================================================================
-pids <- unique(apply(do.call(rbind, strsplit(FN_tot, split = "_"))[,1:2], 1, paste, collapse = "_")) 
+pids <- unique(apply(do.call(rbind, strsplit(outlier_PMQ, split = "_"))[,1:2], 1, paste, collapse = "_")) 
 
 # Extract all episodes for pids 
 episodes <- unname(unlist(sapply(pids, function(pid) {
   sapply(names(ys_VHX_BPD[[pid]]), function(epi) {
-    paste(pid, epi, sep = "_")})})))
+    paste(pid, epi, sep = "_")}, simplify = F)}, simplify = F)))
 
 # Extract probabilities for all recurrences in pids
 all_recs_pids <- unlist(sapply(pids, function(pid) paste(pid, names(ys_VHX_BPD[[pid]])[-1], sep = "_")))
@@ -245,12 +244,12 @@ if(Figs) png("../Figures/data_false_neg_failures.png", width = 10, height = 7, u
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar, mfrow = c(1,1)) # Important to call before and after plot_data
 plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar, person.vert = T)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
-text(y = rep(0.0375, length(episodes)),
-     x = seq(z, 1-z, length.out = length(episodes)), 
-     labels = text, cex = 0.4, col = text_col, srt = 90)
-points(y = rep(0.06, length(unlist(FN_one))),
-       x = seq(z, 1-z, length.out = length(episodes))[episodes %in% unlist(FN_one)], 
-       pch = 25, cex = 0.4, bg = "black") 
+# text(y = rep(0.0375, length(episodes)),
+#      x = seq(z, 1-z, length.out = length(episodes)), 
+#      labels = text, cex = 0.4, col = text_col, srt = 90)
+# points(y = rep(0.06, length(unlist(outlier_PMQ))),
+#        x = seq(z, 1-z, length.out = length(episodes))[episodes %in% unlist(FN_one)], 
+#        pch = 25, cex = 0.4, bg = "black") 
 if(Figs) dev.off()
 
 
