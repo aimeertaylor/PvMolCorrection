@@ -10,6 +10,10 @@ list(list = ls())
 library(Pv3Rs) # For plots
 Figs <- T
 
+# Length (in markers) of each episode:
+range(unlist(sapply(ys_VHX_BPD, function(y) sapply(y, length))))
+
+
 # Load data from all participants to extract meta data
 load("../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/Combined_Time_Event.RData") 
 

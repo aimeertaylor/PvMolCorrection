@@ -9,7 +9,7 @@ library(Pv3Rs) # For plot_data
 load("../RData/results_Pv3Rs.RData")
 big_diff <- 0.25 # probability difference considered large
 states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
-priors <- c("Uniform", "TimeToEvent")
+priors <- c("uniform" = "Uniform", "time-to-event" = "TimeToEvent")
 pids_big_diff <- list()
 eids_big_diff <- list()
 Figs <- TRUE
@@ -62,7 +62,8 @@ for(prior in priors) {
          y = unlst_pwise[unlst_n_rec > 1, s], 
          xlim = c(0,1), ylim = c(0,1),
          ylab = "Pairwise", xlab = "Joint", pch = 20,
-         bty = "n", main = sprintf("%s: %s prior", names(which(states == s)), prior))
+         bty = "n", 
+         main = sprintf("%s: %s prior", names(which(states == s)), names(which(priors == prior))))
     abline(a = 0, b = 1, lty = "dotted")
     
     # Extract and annotate big differences per recurrent state

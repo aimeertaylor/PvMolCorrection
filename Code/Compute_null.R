@@ -1,8 +1,5 @@
 ################################################################################
-# To do: back compute alpha that would give same failure rate as that previously 
-# published
 ################################################################################
-
 rm(list = ls())
 load("../RData/ys_null.RData")
 source("genetic_proximity.R")

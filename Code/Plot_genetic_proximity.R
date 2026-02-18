@@ -6,7 +6,7 @@ load("../RData/marg_results_Pv3Rs.RData") # Load posterior probabilities
 Figs <- T
 
 #===============================================================================
-# Plot probabilities against genetic proximity: 
+# Plot probabilities against genetic proximity to decide on which proximity: 
 #===============================================================================
 par(mfrow = c(2,2), pty = "s")
 
@@ -80,7 +80,7 @@ rownames(Uniform_pwise) <- unlist(sapply(names(Uniform_pairwise), function(pid){
 
 
 #===============================================================================
-# Compare with prototype. 
+# Compare Pv3Rs (data modelled jointly and pairwise) with prototype
 #
 # Remember that probabilities given uniform prior were only computed using the
 # prototype for a subset of recurrences. The subset does not include
@@ -91,7 +91,7 @@ rownames(Uniform_pwise) <- unlist(sapply(names(Uniform_pairwise), function(pid){
 # Pv3Rs generally smoother 
 # Pv3Rs improves VHX_452_2 and VHX_214_2
 # Pv3Rs clearly worse for VHX_56_2, VHX_91_2 
-# Pv3Rs possible worse for BPD_70_2, VHX_298_2, BPD_253_3  
+# Pv3Rs possibly worse for BPD_70_2, VHX_298_2, BPD_253_3  
 # Pv3Rs pairwise: minor improvement for BPD_253_3  
 #===============================================================================
 load('../jwatowatson-RecurrentVivax-4870715/RData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_samples_Tagnostic.RData')
@@ -136,51 +136,67 @@ text(x = rhats_tot[eids_proto_pv3Rs[uls]], y = 1-Uniform_pwise[eids_proto_pv3Rs[
      labels = eids_proto_pv3Rs[uls], pos = 4, cex = 0.5, col = "hotpink")
 
 #===============================================================================
-# Plot for ms
-par(mfrow = c(2,1), mar = c(5,5,1,2))
+# Plots for ms
 #===============================================================================
-outlier_u <- c(proto = c("VHX_56_2", "VHX_91_2"), # pv3rs vs proto
+# List recurrences where misspecification is stongly suspected for uniform and time-to-event: 
+suspect_u <- c(proto = c("VHX_56_2", "VHX_91_2"), # pv3rs vs proto
                uncom = "VHX_39_2", # uncomputable using the prototype
                pwise = c("VHX_113_6", "VHX_450_8", "VHX_489_4", "VHX_529_4", "VHX_532_4")) 
+suspect_t <- c(proto = c("VHX_56_2")) 
 
-outlier_t <- c(proto = c("VHX_56_2")) 
+# Identify outliers using visual inspection:
+outlier_u_log <- rhats_tot > 0.42 & (1-Uniform_Pv3Rs[names(rhats_tot),"I"]) < 0.7
 
+if (Figs) pdf(file = "../Figures/compare_prob_prox.pdf", height = 7, width = 12)
+par(mfrow = c(2,1), mar = c(5,5,1,2))
 plot(x = rhats_tot, y = 1-Uniform_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
+     col = outlier_u_log + 1,
      xlab = "Genetic proximity: total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (uniform prior)")
-abline(v = q_tot["95%"], lty = "dashed", col = "red")
-text(x = rhats_tot[outlier_u], y = 1-Uniform_Pv3Rs[outlier_u,"I"], 
-     labels = outlier_u, pos = 4, cex = 0.5)
+abline(v = q_tot["95%"], lty = "dashed")
+text(x = rhats_tot[suspect_u], y = 1-Uniform_Pv3Rs[suspect_u,"I"], 
+     labels = suspect_u, pos = 4, cex = 0.5)
+legend("right", legend = c("no PQ", "PQ +"), pch = c(16, 17), 
+       bty = "n", inset = 0.25)
 
 plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
+     col = outlier_u_log + 1,
      xlab = "Genetic proximity: total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (informative prior)")
-abline(v = q_tot["95%"], lty = "dashed", col = "red")
-text(x = rhats_tot[outlier_t], y = 1-TimeToEvent_Pv3Rs[outlier_t,"I"], 
-     labels = outlier_t, pos = 4, cex = 0.5)
+abline(v = q_tot["95%"], lty = "dashed")
+text(x = rhats_tot[suspect_t], y = 1-TimeToEvent_Pv3Rs[suspect_t,"I"], 
+     labels = suspect_t, pos = 4, cex = 0.5)
+legend("right", legend = c("no PQ", "PQ +"), pch = c(16, 17), 
+       bty = "n", inset = 0.25)
+if (Figs) dev.off()
 
-
+if (Figs) pdf(file = "../Figures/outlier_correction.pdf", height = 3.5, width = 12)
+par(mfrow = c(1,1), mar = c(5,5,1,2))
 X <- Uniform_Pv3Rs[,c("C","L","I")]
-X[outlier_u[grepl("pwise", names(outlier_u))],] <-
-  Uniform_pwise[outlier_u[grepl("pwise", names(outlier_u))], c("C","L","I")]
+X[suspect_u[grepl("pwise", names(suspect_u))],] <-
+  Uniform_pwise[suspect_u[grepl("pwise", names(suspect_u))], c("C","L","I")]
 plot(x = rhats_tot, y = 1-X[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16,
      col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
      xlab = "Genetic proximity: total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (uniform prior)")
-abline(v = q_tot["95%"], lty = "dashed", col = "red")
+abline(v = q_tot["95%"], lty = "dashed")
 outlier_PMQ <- names(which(rhats_tot > 0.45 & (1-X[names(rhats_tot),"I"]) < 0.1 & 
-                       PMQ[names(rhats_tot)]))
+                             PMQ[names(rhats_tot)]))
 text(x = rhats_tot[outlier_PMQ], y = 1-Uniform_Pv3Rs[outlier_PMQ,"I"], 
      labels = outlier_PMQ, pos = 4, cex = 0.5)
 arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ], 
-         y0 = 1-Uniform_Pv3Rs[outlier_PMQ,"I"] + 0.025, 
-         y1 = 0.975, length = 0.05)
+       y0 = 1-Uniform_Pv3Rs[outlier_PMQ,"I"] + 0.05, 
+       y1 = 0.95, length = 0.05)
+legend("right", legend = c("no PQ", "PQ +"), col = c("lightgrey","black"),
+       pch = c(16, 17), 
+       bty = "n", inset = 0.25)
+if (Figs) dev.off()
 
 plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
@@ -188,12 +204,16 @@ plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"],
      col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
      xlab = "Genetic proximity: total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (informative prior)")
-abline(v = q_tot["95%"], lty = "dashed", col = "red")
+abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[outlier_PMQ], y = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"], 
      labels = outlier_PMQ, pos = 4, cex = 0.5)
 arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ], 
-       y0 = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"] + 0.025, 
-       y1 = 0.975, length = 0.05)
+       y0 = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"] + 0.05, 
+       y1 = 0.95, length = 0.05)
+legend("right", legend = c("no PQ", "PQ +"), col = c("lightgrey","black"),
+       pch = c(16, 17), 
+       bty = "n", inset = 0.25)
+
 
 #===============================================================================
 # Numbers for ms: 
@@ -208,14 +228,16 @@ sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "C"])/sum(rhats_one <= q
 
 # Average probability of reinfection among relapse/recrudescence classified
 sum(Uniform_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
-sum(X[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
+sum(X[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"]) # joint-to-pwise outlier correction
 sum(TimeToEvent_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
 
 
 #===============================================================================
 # Inspect data on major outliers: 
 #===============================================================================
-pids <- unique(apply(do.call(rbind, strsplit(outlier_PMQ, split = "_"))[,1:2], 1, paste, collapse = "_")) 
+outlier_u <- names(which(outlier_u_log))
+outlier_extra <- outlier_u[!outlier_u %in% suspect_u]
+pids <- unique(apply(do.call(rbind, strsplit(outlier_extra, split = "_"))[,1:2], 1, paste, collapse = "_")) 
 
 # Extract all episodes for pids 
 episodes <- unname(unlist(sapply(pids, function(pid) {
@@ -240,16 +262,16 @@ main_mar <- c(3, 3.5, 1.5, 3.5)
 z <- 1/(2*length(episodes)) # See text x placement
 
 # Plot for ms
-if(Figs) png("../Figures/data_false_neg_failures.png", width = 10, height = 7, units = "in", res = 300) 
+if(Figs) png("../Figures/data_outliers.png", width = 10, height = 7, units = "in", res = 300) 
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar, mfrow = c(1,1)) # Important to call before and after plot_data
 plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar, person.vert = T)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
-# text(y = rep(0.0375, length(episodes)),
-#      x = seq(z, 1-z, length.out = length(episodes)), 
-#      labels = text, cex = 0.4, col = text_col, srt = 90)
-# points(y = rep(0.06, length(unlist(outlier_PMQ))),
-#        x = seq(z, 1-z, length.out = length(episodes))[episodes %in% unlist(FN_one)], 
-#        pch = 25, cex = 0.4, bg = "black") 
+text(y = rep(0.0375, length(episodes)),
+     x = seq(z, 1-z, length.out = length(episodes)),
+     labels = text, cex = 0.4, col = text_col, srt = 90)
+points(y = rep(0.06, length(unlist(outlier_extra))),
+       x = seq(z, 1-z, length.out = length(episodes))[episodes %in% unlist(outlier_extra)],
+       pch = 25, cex = 0.4, bg = "black")
 if(Figs) dev.off()
 
 

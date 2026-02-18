@@ -24,6 +24,13 @@ load(sprintf('%sRData/GeneticModel/Including_Complex_Cases_Full_Posterior_Model_
 load("../Rdata/MS_final_generated_by_running_all_chunks_of_Pooled_Analysis.Rmd")
 rownames(MS_final) <- MS_final[,"Episode_Identifier"]
 
+# Global summary: 
+summary(1-TimeToEvent_Pv3Rs[,"I"])
+summary(1-MS_final[,"I_median"])
+summary(1-thetas_9MS_Tagnostic[,"I50%"])
+summary(1-Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic),"I"])
+
+
 #===============================================================================
 # Sanity check that median values are the same across MS_final and thetas_9MS
 #===============================================================================

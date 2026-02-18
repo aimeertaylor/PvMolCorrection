@@ -28,10 +28,21 @@
 ################################################################################
 rm(list = ls())
 Figs <- TRUE
-outlier_correction <- TRUE
+outlier_correction <- FALSE
 
 # Load Pv3R results
 load("../RData/marg_results_Pv3Rs.RData") 
+
+if(outlier_correction){
+  load("../RData/prior_estimates.RData") # Needed for prior transformation
+  corrected_L <- c(0.99, 0.99)
+  corrected_unnorm <- cbind(C = c(0,0), 
+                            L = corrected_L, 
+                            I = 1-corrected_L) * prior[c("BPD_577_2", "VHX_56_2"),] 
+  corrected_norm <- t(apply(corrected_unnorm, 1, function(x) x/sum(x)))
+  TimeToEvent_Pv3Rs[c("BPD_577_2", "VHX_56_2"), colnames(corrected_norm)] <- corrected_norm
+  TimeToEvent_Pv3Rs[c("BPD_577_2", "VHX_56_2"), "joint"] <- NA # Neither jointly nor pwise
+}
 
 # Load VHX and BPD pooled non-genetic data set and convert to data frame
 load('../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/Combined_Time_Event.RData')
@@ -77,11 +88,6 @@ Results <- data.frame(Pv3Rs = TimeToEvent_Pv3Rs[,"I"],
                           prototype_mean[rownames(TimeToEvent_Pv3Rs)])
 rownames(Results) <- rownames(TimeToEvent_Pv3Rs)
 nrow(Results) # Should be 493
-
-if(outlier_correction){
-  Results["BPD_577_2", "Pv3Rs"] <- 0 # Prior on reinfection is high
-  Results["VHX_56_2", "Pv3Rs"] <- 0 # Prior on reinfection is near zero
-}
 
 # Load time-to-event only based estimates. These are all posterior mean
 # estimates (Pooled_Analysis.Rmd lines 672 and 1807). prior_estimates.RData
@@ -192,7 +198,9 @@ if (Figs) png(sprintf("../Figures/compare_failure_rates_outlier_corrected_%s.png
     width = 7, height = 7, units = "in", res = 300)
 plot(x = patient_summaries$Failure_prototype_median[ind_all], 
      y = patient_summaries$Failure_Pv3Rs[ind_all],
-     xlab = "Prototype", ylab = "Pv3Rs", bty = "n", 
+     xlab = "Prototype", 
+     ylab = sprintf("Pv3Rs (outliers %s)", ifelse(outlier_correction, "corrected", "uncorrected")),
+     bty = "n", 
      xlim = c(0,1.15), ylim = c(0,1.15),
      pch = 16 + grepl("VHX", patient_summaries$patientid))
 text(x = patient_summaries$Failure_prototype_median[ind_all][big_diffs[ind_all]], 
