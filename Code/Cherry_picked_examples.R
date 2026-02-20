@@ -6,8 +6,9 @@
 ################################################################################
 rm(list = ls())
 library(Pv3Rs)
-cherries <- c("VHX_225", "VHX_457", "VHX_475", #"VHX_554", #"VHX_551", 
-              "VHX_622") #, "VHX_532", "BPD_45" "VHX_541", "VHX_650")
+Fig <- TRUE
+cherries <- c("VHX_225", "VHX_475", #"VHX_554", "VHX_551",
+              "VHX_622", "VHX_532") #"BPD_45", "VHX_541", "VHX_650")
 
 load("../RData/results_Pv3Rs.RData")
 marg <- sapply(cherries, function(pid) {
@@ -17,22 +18,32 @@ marg <- sapply(cherries, function(pid) {
     Uniform_joint[[pid]][["marg"]]
   }
 })
-state_names <- c("Recrud.", "Relapse", "Reinf.")
-episodes <- unlist(sapply(marg, function(x) c(1, as.numeric(rownames(x)))))
-probs <- unlist(sapply(marg, function(x) apply(x, 1, max))) # Get max marginal estimates 
-states <- unlist(sapply(marg, function(x) apply(x, 1, function(z) state_names [which.max(z)])))
-main_mar <- c(5,2.6,1,2.6) # Margin around main plot
-plot_data(ys = ys_VHX_BPD[cherries], fs = fs_VHX_BPD, mar = main_mar, marker.annotate = F)
-par(fig = c(0,1,0,1), mar = main_mar) # Reset before text annotation (important)
-#box() # Toggle on and off to see plot limits for text() — not enacted in margin
-text(y = rep(0.21, length(probs)), adj = 1, # right justify 
-     x = seq(0.009, 1-0.009, length.out = length(episodes))[-which(episodes == 1)], 
-     labels = paste0(states, " ", 100*round(probs,2), "%"), 
-     cex = 0.7, srt = 90)
 
-# For website: 
-png("../Figures/cherry_picked.png")
-plot_data(ys = ys_VHX_BPD[cherries], fs = fs_VHX_BPD, marker.annotate = F)
-dev.off()
+state_names <- c("C", "L", "I")
+episodes <- unlist(sapply(cherries, function(pid) paste(pid, names(ys_VHX_BPD[[pid]]), sep = "_")))
+probs <- unlist(sapply(marg, function(x) apply(x, 1, max))) # Get max marginal estimates 
+states <- unlist(sapply(marg, function(x) apply(x, 1, function(z) state_names[which.max(z)])))
+main_mar <- c(1.5, 3.5, 1.5, 3.5) # Margin around main plot
+text <- rep("", length(episodes)) 
+names(text) <- episodes
+text[gsub(".", "_", names(probs), fixed = T)] <- paste0(states, " ", 100*round(probs,2))
+z <- 1/(2*length(episodes)) # See text x placement
+no_episodes_per_pid <- sapply(ys_VHX_BPD[cherries], length)
+text_col <- unlist(sapply(1:length(cherries), function(i){
+  if(i %% 2 == 1) {
+    rep("white", no_episodes_per_pid[i])
+  } else {
+    rep("black", no_episodes_per_pid[i])
+  }}))
+
+
+if(Fig) png("../Figures/cherry_picked.png", res = 300, width = 10, height = 7, units = "in")
+par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Reset before text annotation (important)
+plot_data(ys = ys_VHX_BPD[cherries], fs = fs_VHX_BPD, mar = main_mar, marker.annotate = F)
+par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Reset before text annotation (important)
+text(y = rep(0.01, length(episodes)), x = seq(z, 1-z, length.out = length(episodes)), 
+     labels = text, cex = 0.6, col = text_col)
+if(Fig) dev.off()
+
 
 

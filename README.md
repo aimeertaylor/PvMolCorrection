@@ -62,9 +62,6 @@ after running `Pooled_Analysis.Rmd` in
 	
 10) Run `Compute_failure_rates.R` to generate 
  - `compare_failure_rates.png`
- 
-11) Run `Check_prior_conversion.R` to assess the accuracy of prior conversion 
-given access to only marginal probabilities 
     
 ## Extra scripts
 
@@ -74,7 +71,11 @@ run the `Understanding_*.R scripts`, noting that `Understanding_priors.R` requir
 `Compute_recurrent_states_Pv3Rs.R`. 
 
 In no particular order: 
+- `Cherry_picked_examples.R` generates plot used to illustrate visual inference. 
 - `Plot_site_freq_spectrum.R` to plot per-marker SFS ordered by marker 
 cardinality. Nothing notable to report: SFS are remarkable similar. 
-- `Cherry_picked_examples.R` does not yet feature in any written reports. 
+- `Check_prior_conversion.R` to assess the accuracy of prior conversion 
+given access to only marginal probabilities. 
+- `Check_markers_typed` to check the assertion that additional 6 markers typed if
+matches seen a > 1/3 first three markers.
 

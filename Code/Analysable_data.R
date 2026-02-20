@@ -13,6 +13,8 @@ Figs <- T
 # Length (in markers) of each episode:
 range(unlist(sapply(ys_VHX_BPD, function(y) sapply(y, length))))
 
+# Numbers of typed episodes per person
+table(sapply(ys_VHX_BPD, length))[-1]
 
 # Load data from all participants to extract meta data
 load("../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/Combined_Time_Event.RData") 
