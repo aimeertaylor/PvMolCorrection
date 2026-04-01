@@ -1,9 +1,9 @@
 ################################################################################
 # This is a temporary script that I've pushed to GitHub in order to have a copy
-# in version history. It compares the probablities computed using the
-# approximate joint before and after setting recrudescence probabilities to zero
-# for non-adjacent episodes — a modification following discussion with
-# YSF on 1st April 2026.
+# in version history. It compares the probabilities computed using the
+# approximate joint before and after 
+# 1) setting recrudescence probabilities to zero
+# 2) implementing Elijah's change suggested 1st April 2026
 ################################################################################
 rm(list = ls())
 
@@ -17,20 +17,19 @@ par(mfrow = c(2,1))
 plot(unlist(TimeToEvent_pairwise_old), unlist(TimeToEvent_pairwise))
 plot(unlist(Uniform_pairwise_old), unlist(Uniform_pairwise))
 
-# These are identical: 
+# These are no-longer identical: 
 identical(unlist(Uniform_pairwise_old), unlist(Uniform_pairwise))
-
-# Because the posterior is either zero or greater than 0.5 and
-# compute_posterior_approxjoint contains the if clause for recrudescence probs
-# greater than 0.5
-C_probs <- unlist(sapply(Uniform_pairwise, function(x) x[,"C"]))
-range(C_probs[C_probs > 0.5])
-range(C_probs[C_probs <= 0.5])
+max(abs(unlist(Uniform_pairwise_old) - unlist(Uniform_pairwise)))
+which(abs(unlist(Uniform_pairwise_old) - unlist(Uniform_pairwise)) > 0.01)
+Uniform_pairwise_old[["VHX_220"]]
+Uniform_pairwise[["VHX_220"]]
+plot_data(y)
 
 # These are not: 
 identical(unlist(TimeToEvent_pairwise_old), unlist(TimeToEvent_pairwise))
 max(abs(unlist(TimeToEvent_pairwise_old) - unlist(TimeToEvent_pairwise)))
-C_probs <- unlist(sapply(TimeToEvent_pairwise, function(x) x[,"C"]))
-any(C_probs > 0.5) # No C probs larger than 0.5
-range(C_probs[C_probs <= 0.5]) # Contains some non zero C probs
+which(abs(unlist(TimeToEvent_pairwise_old) - unlist(TimeToEvent_pairwise)) > 0.01)
+plot_data(ys_VHX_BPD[c("VHX_350", "VHX_646")])
+TimeToEvent_pairwise_old["VHX_646"]
+TimeToEvent_pairwise["VHX_646"]
 

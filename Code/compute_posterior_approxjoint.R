@@ -21,9 +21,10 @@ compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
     epi_pair_chr <- as.character(epi_pairs[i,])
     y_pair <- y[epi_pair_chr] 
     
-    if(sum(determine_MOIs(y_pair)) < 8) { # Check fewer than 8 genotypes
+    if(sum(determine_MOIs(y_pair)) <= 8) { # Check fewer than 9 genotypes
       
       if(is.null(prior)) {
+        
         if (diff(epi_pairs[i,]) == 1) { # Recrudescence is possible
           x <- compute_posterior(y = y_pair, fs = fs)$marg
         } else { # Recrudescence is impossible; reweigh prior accordingly
@@ -49,23 +50,19 @@ compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
       z[epi_pair_chr[1],epi_pair_chr[2],"I"] <- x[1,"I"]
     }
   }
+   
+  # Extract recrudescence probability, comparing to the previous episode only.
+  # Returns NA if no estimate for previous
+  C <- sapply(2:n_epi, function(r) z[r-1, r, c("C")])
   
-  # For reinfection, compare to all preceding episodes
-  I_unnorm <- apply(z[, -1,"I", drop = F], 2, min, na.rm = T) 
+  # Compute the relapse share of the non-recrudescence probability, comparing to all preceding episodes 
+  L <- apply(z[, -1, "L", drop = F]/(1 - z[, -1, "C", drop = F]), 2, max, na.rm = T) * (1 - C)
   
-  # For recrudescence, compare to previous episode only; returns NA if no estimate for previous
-  C_unnorm <- sapply(2:n_epi, function(r) z[r-1, r, c("C")])
-  
-  # For relapse, compare to all preceding episodes 
-  L_unnorm <- apply(z[, -1,"L", drop = F], 2, max, na.rm = T) 
-  
-  # If recrudescence has a high probability, overwrite all preceding with previous
-  C_high <- C_unnorm > 0.5 & I_unnorm < 0.001
-  L_prev <- sapply(2:n_epi, function(r) z[r-1, r, c("L")])
-  L_unnorm[C_high] <- L_prev[C_high]
+  # Attribute remaining non-recrudescence probability to reinfection
+  I <- 1 - (C + L)
   
   # Compute normalised marginal posteriors; returns NA if recrudescence NA
-  marg <- t(apply(cbind(C = C_unnorm, L = L_unnorm, I = I_unnorm), 1, function(x) x/sum(x)))
+  marg <- cbind(C = C, L = L, I = I)
   
   # Check summation to one if not NA
   norm_check <- (rowSums(marg) - 1) <= .Machine$double.eps^0.5
