@@ -6,7 +6,7 @@
 # data on pairs of episodes.
 ################################################################################
 compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
-
+  
   # Number of episodes 
   n_epi <- length(y)
   
@@ -17,19 +17,35 @@ compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
   epi_pairs <- gtools::combinations(n = length(names(y)), r = 2, v = as.numeric(names(y)))
   
   for(i in 1:nrow(epi_pairs)) {
+    
     epi_pair_chr <- as.character(epi_pairs[i,])
     y_pair <- y[epi_pair_chr] 
+    
     if(sum(determine_MOIs(y_pair)) < 8) { # Check fewer than 8 genotypes
+      
       if(is.null(prior)) {
-        x <- compute_posterior(y = y_pair, fs = fs)$marg             
+        if (diff(epi_pairs[i,]) == 1) { # Recrudescence is possible
+          x <- compute_posterior(y = y_pair, fs = fs)$marg
+        } else { # Recrudescence is impossible; reweigh prior accordingly
+          rec_prior <- as.matrix(c(C = 0, L = 0.5, I = 0.5), nrow = 1)
+          x <- compute_posterior(y = y_pair, fs = fs, prior = )$marg
+        }
       } else {
-        rec_prior <- prior[epi_pair_chr[2], , drop = F] # Extract prior for single recurrence 
-        x <- compute_posterior(y = y_pair, fs = fs, prior = rec_prior)$marg  
+        
+        rec_prior <- prior[epi_pair_chr[2], , drop = F] # Extract prior for single recurrence
+        
+        if (diff(epi_pairs[i,]) == 1) { # Recrudescence is possible
+          x <- compute_posterior(y = y_pair, fs = fs, prior = rec_prior)$marg     
+        } else { # Recrudescence is impossible; reweigh prior accordingly
+          rec_prior[,"C"] <- 0 # Overwrite recrudescence prior probability
+          rec_prior <- rec_prior / sum(rec_prior) # Renormalise
+          x <- compute_posterior(y = y_pair, fs = fs, prior = rec_prior)$marg   
+        }
       }
- 
+      
       z[epi_pair_chr[1],epi_pair_chr[2],"C"] <- x[1,"C"]
-      z[epi_pair_chr[1],epi_pair_chr[2],"L"]  <- x[1,"L"]
-      z[epi_pair_chr[1],epi_pair_chr[2],"I"]  <- x[1,"I"]
+      z[epi_pair_chr[1],epi_pair_chr[2],"L"] <- x[1,"L"]
+      z[epi_pair_chr[1],epi_pair_chr[2],"I"] <- x[1,"I"]
     }
   }
   
@@ -38,7 +54,7 @@ compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
   
   # For recrudescence, compare to previous episode only; returns NA if no estimate for previous
   C_unnorm <- sapply(2:n_epi, function(r) z[r-1, r, c("C")])
-     
+  
   # For relapse, compare to all preceding episodes 
   L_unnorm <- apply(z[, -1,"L", drop = F], 2, max, na.rm = T) 
   
