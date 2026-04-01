@@ -30,6 +30,7 @@ compute_posterior_approxjoint <- function(y, fs, prior = NULL) {
           rec_prior <- as.matrix(c(C = 0, L = 0.5, I = 0.5), nrow = 1)
           x <- compute_posterior(y = y_pair, fs = fs, prior = )$marg
         }
+        
       } else {
         
         rec_prior <- prior[epi_pair_chr[2], , drop = F] # Extract prior for single recurrence
