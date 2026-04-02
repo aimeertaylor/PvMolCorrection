@@ -62,8 +62,8 @@ for(pid in paired_data_pids) {
     TimeToEvent_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD, prior = prior_per_patient)
     Uniform_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD)    
   } else { 
-    TimeToEvent_joint[[pid]] <- NA #compute_posterior(y, fs_VHX_BPD, prior = prior_per_patient)
-    Uniform_joint[[pid]] <- NA #compute_posterior(y, fs_VHX_BPD)
+    TimeToEvent_joint[[pid]] <- compute_posterior(y, fs_VHX_BPD, prior = prior_per_patient)
+    Uniform_joint[[pid]] <- compute_posterior(y, fs_VHX_BPD)
     TimeToEvent_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD, prior = prior_per_patient)
     Uniform_pairwise[[pid]] <- compute_posterior_approxjoint(y, fs_VHX_BPD)
   }
