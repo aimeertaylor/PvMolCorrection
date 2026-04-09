@@ -39,7 +39,7 @@ all(MS_final[rownames(thetas_9MS), "L"] == thetas_9MS[,"L50%"], na.rm = T)
 all(MS_final[rownames(thetas_9MS), "I"] == thetas_9MS[,"I50%"], na.rm = T)
 # thetas_9MS inc pids with total MOI 6 where MS_final doesn't, hence na.rm = T 
 # These three participants are included in thetas_9MS because inference was 
-# attempted but failed; VHX_583, VHX_39, VHX_33 were not tried
+# attempted but failed; inference for VHX_583, VHX_39, VHX_33 was not attempted
 rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(MS_final)] 
 
 #===============================================================================
@@ -97,7 +97,7 @@ rownames(TimeToEvent_Pv3Rs)[which(!rownames(TimeToEvent_Pv3Rs) %in% rownames(MS_
 # "VHX_239_2" "VHX_33_2"  "VHX_39_2"  "VHX_461_2" "VHX_52_2"  "VHX_583_2"
 
 #===============================================================================
-# Compare Pv3Rs and prototype uniform results: median and mean for joint only
+# Compare Pv3Rs and prototype uniform results: both median and mean available for joint
 # Unless it is decided to discuss mean estimates, avoid including them in ms plots
 #===============================================================================
 if(Figs) png("../Figures/compare_Pv3Rs_vs_prototype.png", 
@@ -157,9 +157,6 @@ for(s in states){
          pos = if(s == "I") c(4,3,3,1) else c(2,1,1,3)) # Choose pos by hand 
   }
 } 
-
-
-
 if(Figs) dev.off()
 
 #===============================================================================
@@ -191,10 +188,10 @@ plot_data(ys = ys_VHX_BPD[pids_big_diffs_TimeToEvent], fs = fs_VHX_BPD)
 MS_final[big_diffs_TimeToEvent, c("C_median", "L_median", "I_median")] 
 TimeToEvent_Pv3Rs[big_diffs_TimeToEvent,] 
 
-# VHX_56_2: Pv3Rs closer to reinfection, seems to be a case of half-sib misspec. 
-# BPD_253_3: Pv3Rs closer to reinfection, seems reasonable 
+# VHX_56_2: Pv3Rs closer to reinfection, possible case of half-sib misspec. 
 # VHX_419_6: Pv3Rs closer to reinfection, seems reasonable
 # BPD_562_2: Pv3Rs closer to relapse, seems reasonable
+# BPD_253_3: Pv3Rs closer to reinfection, seems reasonable 
 
 # Plot data and inspect estimates for the participants with estimates that differ
 plot_data(ys = ys_VHX_BPD[pids_big_diffs_Uniform], fs = fs_VHX_BPD)
@@ -207,7 +204,7 @@ Uniform_Pv3Rs[big_diffs_Uniform,]
 # VHX_214_2: Pv3Rs closer to reinfection, not unreasonable
 # VHX_298_2: Pv3Rs closer to reinfection, not unreasonable
 # VHD_452_2: Pv3Rs closer to reinfection, not unreasonable
-# VHX_91_2: Pv3Rs closer to reinfection, seems to be a case of half-sib misspec. 
+# VHX_91_2: Pv3Rs closer to reinfection, possible case of half-sib misspec. 
 
 
 #===============================================================================

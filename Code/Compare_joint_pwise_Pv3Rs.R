@@ -1,8 +1,6 @@
 ################################################################################
 # Joint vs pairwise probabilities
-# For loop suboptimally coded
-# Something wrong with 419: compute_posterior(ys_VHX_BPD[["VHX_419"]] , fs_VHX_BPD, progress.bar = FALSE)
-# recovers certain relapse for episode 5 and low relapse for episode 6!
+# The for loop is sub-optimally coded
 ################################################################################
 rm(list = ls())
 library(Pv3Rs) # For plot_data

@@ -1,12 +1,13 @@
 ################################################################################
 # Cherry-picked examples of pretty data plus
-# VHX_532 (an example of half sibs with a high posterior relapse probability)
-# BPD_45 (a rare example of a possible reinfection with data on nine markers)
-# All of which besides VHX_225_4 and VHX_532_4 (half-sibs) have common sense estimates.
 ################################################################################
 rm(list = ls())
 library(Pv3Rs)
 Fig <- TRUE
+
+# VHX_532 (an example of half sibs with a high and low posterior relapse prob.)
+# BPD_45 (a rare example of a possible reinfection with data on nine markers)
+# All of which besides VHX_225_4 and VHX_532_4 (half-sibs) have common sense estimates.
 cherries <- c("VHX_225", "VHX_475", #"VHX_554", "VHX_551",
               "VHX_622", "VHX_532") #"BPD_45", "VHX_541", "VHX_650")
 

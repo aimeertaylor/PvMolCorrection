@@ -28,7 +28,7 @@
 ################################################################################
 rm(list = ls())
 Figs <- TRUE
-outlier_correction <- FALSE
+outlier_correction <- TRUE
 
 # Load Pv3R results
 load("../RData/marg_results_Pv3Rs.RData") 

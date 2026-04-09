@@ -81,7 +81,8 @@ write.csv(tab_MOIs[tab_MOIs$Total > 5 | tab_MOIs$Typed.episode.count > 3, ],
 # colour participants for which estimates had to be generated pairwise: 
 # > 3 episodes for prototype, 
 # > 8 MOI total for Pv3Rs,
-# save as excel and take screen shot
+# save as excel 
+# modify page set up so landscape and centred, save as pdf
 
 # Plot all paired data: sort by treatment within trial and in ascending id order
 names_repeat_episode <- names(which(typd_epi_count > 1)) # alpha-numeric sorting

@@ -1,3 +1,5 @@
+################################################################################
+################################################################################
 rm(list = ls())
 library(Pv3Rs)
 load("../RData/genetic_proximities.RData")
@@ -80,7 +82,7 @@ rownames(Uniform_pwise) <- unlist(sapply(names(Uniform_pairwise), function(pid){
 
 
 #===============================================================================
-# Compare Pv3Rs (data modelled jointly and pairwise) with prototype
+# Compare Pv3Rs (data modelled jointly exact and approximate) with prototype
 #
 # Remember that probabilities given uniform prior were only computed using the
 # prototype for a subset of recurrences. The subset does not include

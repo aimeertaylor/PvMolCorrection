@@ -69,6 +69,7 @@ TimeToEvent_xy <- rbind(TimeToEvent_xy, joint = TimeToEvent_Pv3Rs[,"joint"])
 plot_VHXBPD_simplex(Uniform_xy, TimeToEvent_xy)
 dev.off()
 
+
 # Extract data and estimates for recurrences whose recurrent state probabilities 
 # could not be estimated using the prototype
 unestimatable <- c( "VHX_239_2","VHX_461_2","VHX_39_2","VHX_52_2","VHX_583_2","VHX_33_2")
