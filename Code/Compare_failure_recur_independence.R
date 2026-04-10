@@ -29,6 +29,7 @@ plot(x = failure_prob["indep_not_assum",],
 abline(a = 0, b = 1, lty = "dashed")
 
 max(abs(failure_prob["indep_not_assum",] - failure_prob["indep_assum",]))
+sum(abs(failure_prob["indep_not_assum",] - failure_prob["indep_assum",]))
 
 # ==============================================================================
 # Time-to-event: 
@@ -47,3 +48,4 @@ plot(x = failure_prob["indep_not_assum",],
 abline(a = 0, b = 1, lty = "dashed")
 
 max(abs(failure_prob["indep_not_assum",] - failure_prob["indep_assum",]))
+sum(abs(failure_prob["indep_not_assum",] - failure_prob["indep_assum",]))

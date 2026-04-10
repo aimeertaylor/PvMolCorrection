@@ -76,6 +76,8 @@ In no particular order:
 cardinality. Nothing notable to report: SFS are remarkable similar. 
 - `Check_prior_conversion.R` to assess the accuracy of prior conversion 
 given access to only marginal probabilities. 
-- `Check_markers_typed` to check the assertion that additional 6 markers typed 
+- `Check_markers_typed.R` to check the assertion that additional 6 markers typed 
 if matches seen a > 1/3 first three markers.
+- `Compare_failure_recur_independence.R` to see the impact of computing
+probabilities of failure assuming and not independence between recurrences
 
