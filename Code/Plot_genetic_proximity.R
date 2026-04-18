@@ -160,8 +160,10 @@ plot(x = rhats_tot, y = 1-Uniform_Pv3Rs[names(rhats_tot),"I"],
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[suspect_u], y = 1-Uniform_Pv3Rs[suspect_u,"I"], 
      labels = suspect_u, pos = 4, cex = 0.5)
-legend("right", legend = c("no PQ", "PQ +"), pch = c(16, 17), 
-       bty = "n", inset = 0.25)
+legend("right", legend = c("PQ-untreated", "PQ-treated"), pch = c(16, 17), 
+       bty = "n", inset = 0.18)
+legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
+       title = "Marker count", bty = "n")
 
 plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
@@ -172,8 +174,10 @@ plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"],
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[suspect_t], y = 1-TimeToEvent_Pv3Rs[suspect_t,"I"], 
      labels = suspect_t, pos = 4, cex = 0.5)
-legend("right", legend = c("no PQ", "PQ +"), pch = c(16, 17), 
-       bty = "n", inset = 0.25)
+legend("right", legend = c("PQ-untreated", "PQ-treated"), pch = c(16, 17), 
+       bty = "n", inset = 0.18)
+legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
+       title = "Marker count", bty = "n")
 if (Figs) dev.off()
 
 if (Figs) pdf(file = "../Figures/outlier_correction.pdf", height = 3.5, width = 12)
@@ -195,9 +199,10 @@ text(x = rhats_tot[outlier_PMQ], y = 1-Uniform_Pv3Rs[outlier_PMQ,"I"],
 arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ], 
        y0 = 1-Uniform_Pv3Rs[outlier_PMQ,"I"] + 0.05, 
        y1 = 0.95, length = 0.05)
-legend("right", legend = c("no PQ", "PQ +"), col = c("lightgrey","black"),
-       pch = c(16, 17), 
-       bty = "n", inset = 0.25)
+legend("right", legend = c("PQ-untreated", "PQ-treated"), 
+       col = c("lightgrey","black"), pch = c(16, 17), bty = "n", inset = 0.18)
+legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
+       title = "Marker count", bty = "n")
 if (Figs) dev.off()
 
 plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
@@ -212,9 +217,11 @@ text(x = rhats_tot[outlier_PMQ], y = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"],
 arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ], 
        y0 = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"] + 0.05, 
        y1 = 0.95, length = 0.05)
-legend("right", legend = c("no PQ", "PQ +"), col = c("lightgrey","black"),
+legend("right", legend = c("PQ-untreated", "PQ-treated"), col = c("lightgrey","black"),
        pch = c(16, 17), 
-       bty = "n", inset = 0.25)
+       bty = "n", inset = 0.18)
+legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
+       title = "Marker count", bty = "n")
 
 
 #===============================================================================
