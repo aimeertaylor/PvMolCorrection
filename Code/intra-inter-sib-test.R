@@ -1,76 +1,65 @@
 ################################################################################
-# Write a function to test if cases of suspecting misspecification align with 
-# cases where RGS with sibling edges both within and across infections have -INF
-# likelihood
+# Script to explore inference as a function of markers Assumes pairwise
+# inference: written with Emily's False Negatives in mind.
+#
+# Examples without suspected misspecification: 
+# "VHX_52", "BPD_562", "VHX_239", "VHX_461"
+# Examples with suspected misspecification:
+# "VHX_56", "VHX_39", "BPD_577"
+#
+# Emily will need to replace:
+# ys_VHX_BPD with ys from OPRA, IMPROV
+# fs_VHX_BPD with fs from OPRA, IMPROV
+#
+# In example below we see that when inference is based on data that include
+# PV.ms8, relapse probability generally drops to its lowest possible value
 ################################################################################
 library(Pv3Rs)
 rm(list = ls())
-y <- ys_VHX_BPD[["VHX_56"]]
-plot_data(ys_VHX_BPD["VHX_56"], fs = fs_VHX_BPD) # Data suggest possible relapse
-post <- compute_posterior(y, fs = fs_VHX_BPD, return.RG = TRUE, return.logp = TRUE)
-post$marg # Low probability of reinfection
+oldpar <- par(no.readonly = T) # To restore plotting parameters later
+pid <- "VHX_56" # Participant id of interest
+plot_data(ys_VHX_BPD[pid], fs = fs_VHX_BPD) # Plot Data
+markers <- names(fs_VHX_BPD) # Names of markers
+all_permutations <- gtools::permutations(repeats.allowed = F, # All possible permutations
+                                            n = length(markers), 
+                                            r = length(markers))
+set.seed(1) # marker reproducible
+n_permutations <- 10 # Number of permutations to explore must be <= nrow(marker_permutations)
+permutations_to_plot <- sample(x = nrow(all_permutations), size = n_permutations, replace = F)
 
-# Explore likelihoods: 
-# Extract all log likelihoods in decreasing order
-llikes <- (sapply(post$RGs, function(RG) RG$logp))
-sorted_llikes <- sort(llikes, decreasing = T) # Sort log likelihoods
-plot(sorted_llikes[!is.infinite(sorted_llikes)]) # Plot sorted finite log likelihoods
-
-# Plot RGs with maximum log likelihoods
-for(i in 1:length(unique(sorted_llikes[!is.infinite(sorted_llikes)]))){
-  RGs <- post$RGs[which(abs(llikes - unique(sorted_llikes)[i]) < .Machine$double.eps^0.5)]
-  par(mar = rep(0.1,4), mfrow = c(1,length(RGs)))
-  for(j in 1:length(RGs)) {
-    plot_RG(RG_to_igraph(RGs[[j]], determine_MOIs(y)), vertex.size = 20)
-    box()
-  }  
+for(permutation in permutations_to_plot){
+  
+  marker_permute <- markers[all_permutations[permutation,]]
+   
+  results <- lapply(1:length(markers), function(m){ # for marker subsets
+    
+    # extract data on maker subset
+    y <- lapply(ys_VHX_BPD[[pid]], function(y_epi) y_epi[marker_permute][1:m]) 
+    # compute posterior probabilities
+    z <- compute_posterior(y, fs = fs_VHX_BPD, return.RG = TRUE, return.logp = TRUE)
+    # extract log likelihoods of relationship graphs RG
+    llikes <- sapply(z$RGs, function(RG) RG$logp)
+    # extract maximum likelihood (ML) RG 
+    RG <- z$RGs[[which(abs(llikes - max(llikes)) < .Machine$double.eps^0.5)[1]]]
+    # return probabilities and ML RGs 
+    list(probs = z$marg, RG = RG_to_igraph(RG, determine_MOIs(y)))
+  })
+  
+  posterior_probs <- sapply(results, function(x) x[["probs"]]) # extract probs
+  
+  # Plot evolution of reinfection probability
+  graphics::layout(mat = matrix(c(rep(1, 9), 2:10), nrow = 2, byrow = T))
+  par(mar = c(4,5,1,2), pty = "m")
+  plot(y = posterior_probs[2,], x = 1:length(markers), 
+       xlab = "Number of markers", ylab = "Probability of relapse", 
+       ylim = c(0,1), bty = "n", type = "b", pch = 20)
+  
+  # Add ML RGs
+  par(mar = rep(1.5,4), pty = "s")
+  for(i in 1:length(results)){
+    plot_RG(results[[i]][["RG"]], vertex.size = 20, vertex.label = NA)
+    title(main = marker_permute[i]) # Number of markers
+  }
+  
+  par(oldpar)
 }
-
-# Write a function that explores the absence of within both and across
-
-
-# Plot RGs with next largest log likelihood
-RGs <- post$RGs[which(abs(llikes - unique(sorted_llikes)[2]) < .Machine$double.eps^0.5)]
-par(mar = rep(0.1,4), mfrow = c(1,length(RGs)))
-for(i in 1:length(RGs)) {
-  plot_RG(RG_to_igraph(RGs[[i]], determine_MOIs(y)), vertex.size = 20)
-  box()
-}
-
-# Plot RGs with next largest log likelihood
-RGs <- post$RGs[which(abs(llikes - unique(sorted_llikes)[3]) < .Machine$double.eps^0.5)]
-par(mar = rep(0.1,4), mfrow = c(1,length(RGs)))
-for(i in 1:length(RGs)) {
-  plot_RG(RG_to_igraph(RGs[[i]], determine_MOIs(y)), vertex.size = 20)
-  box()
-}
-
-
-# Now let's explore the equivalence class with the largest log likelihood.
-# In the following code, we place two graphs in the same equivalence class if
-# they share the same likelihood. This is not ideal (two graphs that are not
-# isomorphic up to permutation could share the same likelihood), but it works
-# here: the plot shows only isomorphic graphs within the equivalence class.
-adj_equal <- abs(diff(sorted_llikes, lag = 1)) < .Machine$double.eps^0.5 # Find matches
-decr_idxs <- which(adj_equal == FALSE) # Change points: 3, 9, 15, ...
-class_sizes <- c(decr_idxs[1], diff(decr_idxs)) # Number of graphs per class
-
-# log likelihood of representative from each 'equivalence class' (EC)
-llikes_unique <- sorted_llikes[decr_idxs]
-
-# EC likelihood
-class_ps <- exp(llikes_unique)*class_sizes
-max_class_p <- which(class_ps == max(class_ps)) # ML EC index 
-max_idx <- decr_idxs[max_class_p] # Index of last graph in ML EC
-max_size <- class_sizes[max_class_p] # Number of graphs in ML EC
-
-# Plot all graphs within the ML EC 
-par(mar = rep(0.1,4), mfrow = c(1,3))
-RG_order <- order(llikes, decreasing = T) # order RGs by logl
-for(i in (max_idx-max_size+1):max_idx) { # EC consists of the RGs with logl rank 21-32
-  RG <- post$RGs[[RG_order[i]]]
-  RG_igraph <- RG_to_igraph(RG, determine_MOIs(y))
-  plot_RG(RG_igraph, vertex.size = 25, vertex.label = NA) 
-  box()
-}
-
