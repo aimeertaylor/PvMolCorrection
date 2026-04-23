@@ -14,7 +14,7 @@
 library(Pv3Rs)
 rm(list = ls())
 set.seed(1) # marker reproducible
-pid <- "VHX_39" # Participant id of interest
+pid <- "VHX_56" # Participant id of interest
 markers <- names(fs_VHX_BPD) # Names of markers
 n_markers <- length(markers) # Number of markers
 # All possible permutations:
