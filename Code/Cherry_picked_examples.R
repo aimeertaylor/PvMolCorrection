@@ -7,8 +7,8 @@ Fig <- TRUE
 
 # VHX_532 (an example of half sibs with a high and low posterior relapse prob.)
 # BPD_45 (a rare example of a possible reinfection with data on nine markers)
-# All of which besides VHX_225_4 and VHX_532_4 (half-sibs) have common sense estimates.
-cherries <- c("VHX_225", "VHX_475", #"VHX_554", "VHX_551",
+# VHX_225_4 and VHX_532_4 (possible half-sibs) 
+cherries <- c("VHX_225", "VHX_457", #"VHX_554", "VHX_551",
               "VHX_622", "VHX_532") #"BPD_45", "VHX_541", "VHX_650")
 
 load("../RData/results_Pv3Rs.RData")
@@ -38,7 +38,7 @@ text_col <- unlist(sapply(1:length(cherries), function(i){
   }}))
 
 
-if(Fig) png("../Figures/cherry_picked.png", res = 300, width = 10, height = 7, units = "in")
+if(Fig) png("../Figures/cherries.png", res = 300, width = 10, height = 7, units = "in")
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Reset before text annotation (important)
 plot_data(ys = ys_VHX_BPD[cherries], fs = fs_VHX_BPD, mar = main_mar, marker.annotate = F)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Reset before text annotation (important)
