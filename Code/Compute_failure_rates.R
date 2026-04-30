@@ -30,7 +30,7 @@
 ################################################################################
 rm(list = ls())
 Figs <- TRUE
-outlier_correction <- TRUE
+outlier_correction <- FALSE
 
 # Load Pv3R results
 load("../RData/marg_results_Pv3Rs.RData") 
@@ -233,8 +233,6 @@ if (!outlier_correction) {
 }
 #++++++++++++++++++++++++++
 
-
-
 # NB the high Pv3Rs failure rate of how the low Pv3Rs failure rate of VHX_56 (half-sib Pv3Rs misspecification) is compensated for by the high failure rate for VHX_583
 patient_summaries[patient_summaries$patientid %in% c("VHX_583", "VHX_56"), ]
 diffs <- patient_summaries$Failure_prototype_median - patient_summaries$Failure_Pv3Rs
@@ -247,7 +245,7 @@ plot(x = patient_summaries$Failure_prototype_median[ind_all],
      ylab = sprintf("Pv3Rs (outliers %s)", ifelse(outlier_correction, "corrected", "uncorrected")),
      bty = "n", 
      xlim = c(0,1.15), ylim = c(0,1.15),
-     pch = 16 + grepl("VHX", patient_summaries$patientid))
+     pch = 16 + grepl("VHX", patient_summaries$patientid[ind_all]))
 text(x = patient_summaries$Failure_prototype_median[ind_all][big_diffs[ind_all]], 
      y = patient_summaries$Failure_Pv3Rs[ind_all][big_diffs[ind_all]], 
      labels = patient_summaries$patientid[ind_all][big_diffs[ind_all]], 
