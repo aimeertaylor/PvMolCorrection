@@ -30,7 +30,7 @@ matches_3[pids_3_excep] # fewer than two match between 1st and 2nd episode
 # Is the rule: if fewer than two match between the first and second episode,
 # type only three markers; otherwise, attempt all markers? Not quite, some
 # participants have data on more than three makers despite fewer than two
-# matches between the first and second episode... 
+# matches between the first and second episode (see last plot)... 
 pids_4plus <- setdiff(names(ys_VHX_BPD)[rep_epi_log], pids_3)
 plot_data(ys_VHX_BPD[pids_4plus], fs = fs_VHX_BPD)  
 
