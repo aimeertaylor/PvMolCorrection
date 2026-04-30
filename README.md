@@ -24,7 +24,7 @@ after running `Pooled_Analysis.Rmd` in
 2) Run `Analysable_data.R` to generate
     - `tab_MOIs.csv` (used to create `tab_MOIs_edited.png`)
     - `data_repeat_episode.png`
-    - `data_unestimatable.png`
+    - `data_uncomputable.png`
 
 3) Run `Extract_and_plot_Pv3Rs.R` to generate
     - `marg_results_Pv3Rs.RData`
@@ -71,7 +71,7 @@ be skipped), run the `Understanding_*.R scripts`, noting that
 by running `Compute_recurrent_states_Pv3Rs.R`. 
 
 In no particular order: 
-- `Cherry_picked_examples.R` generates plot used to illustrate visual inference. 
+- `Cherry_picked_examples.R` generates `cherries.png`. 
 - `Plot_site_freq_spectrum.R` to plot per-marker SFS ordered by marker 
 cardinality. Nothing notable to report: SFS are remarkable similar. 
 - `Check_prior_conversion.R` to assess the accuracy of prior conversion 
