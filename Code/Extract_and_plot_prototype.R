@@ -47,8 +47,7 @@ rownames(thetas_9MS)[!rownames(thetas_9MS) %in% rownames(MS_final)]
 #===============================================================================
 # Source function, project probabilities, add joint indicator, plot
 source("plot_VHXBPD_simplex.R") # Wrapper to avoid code duplication
-if(Figs) png("../Figures/simplex_prototype.png",
-             width = 9, height = 9, units = "in", res = 300)
+if(Figs) png("../Figures/simplex_prototype.png", width = 10, height = 7, units = "in", res = 300)
 na_log <- !is.na(thetas_9MS_Tagnostic$`C50%`) # Some entries have NA estimates
 Uniform_xy <- apply(thetas_9MS_Tagnostic[na_log, c("C50%", "L50%", "I50%")], 1, project2D)
 TimeToEvent_xy <- apply(MS_final[,c("C_median", "L_median", "I_median")], 1, project2D)
