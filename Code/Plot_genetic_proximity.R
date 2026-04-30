@@ -106,7 +106,7 @@ plot(x = rhats_tot[rownames(thetas_9MS_Tagnostic)],
      y = 1-thetas_9MS_Tagnostic[,"I"], 
      pch = 19, bty = "n", 
      cex = rhats_tot_n[rownames(thetas_9MS_Tagnostic)]/9,
-     xlab = "Genetic proximity: total relatedness", 
+     xlab = "Genetic proximity: maximum total relatedness", 
      ylab = "Prototype")
 abline(v = q_tot, lty = c("dashed", "dotted"), col = "red")
 text(x = rhats_tot[eids_proto_pv3Rs[uls]], 
@@ -119,7 +119,7 @@ plot(x = rhats_tot[rownames(thetas_9MS_Tagnostic)],
      y = 1-Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic),"I"], 
      pch = 19, bty = "n", 
      cex = rhats_tot_n[rownames(thetas_9MS_Tagnostic)]/9,
-     xlab = "Genetic proximity: total relatedness", 
+     xlab = "Genetic proximity: maximum total relatedness", 
      ylab = "Pv3Rs (data modelled jointly)")
 abline(v = q_tot, lty = c("dashed", "dotted"), col = "red")
 text(x = rhats_tot[eids_proto_pv3Rs[uls]], 
@@ -131,7 +131,7 @@ plot(x = rhats_tot[rownames(thetas_9MS_Tagnostic)],
      y = 1-Uniform_pwise[rownames(thetas_9MS_Tagnostic), "I"],
      pch = 19, bty = "n", 
      cex = rhats_tot_n[rownames(thetas_9MS_Tagnostic)]/9, 
-     xlab = "Genetic proximity: total relatedness", 
+     xlab = "Genetic proximity: maximum total relatedness", 
      ylab = "Pv3Rs (data modelled pairwise)")
 abline(v = q_tot, lty = c("dashed", "dotted"), col = "red")
 text(x = rhats_tot[eids_proto_pv3Rs[uls]], y = 1-Uniform_pwise[eids_proto_pv3Rs[uls],"I"], 
@@ -149,13 +149,13 @@ suspect_t <- c(proto = c("VHX_56_2"))
 # Identify outliers using visual inspection:
 outlier_u_log <- rhats_tot > 0.42 & (1-Uniform_Pv3Rs[names(rhats_tot),"I"]) < 0.7
 
-if (Figs) pdf(file = "../Figures/compare_prob_prox.pdf", height = 7, width = 12)
+if (Figs) pdf(file = "../Figures/compare_Pv3Rs_vs_proximity.pdf", height = 7, width = 12)
 par(mfrow = c(2,1), mar = c(5,5,1,2))
 plot(x = rhats_tot, y = 1-Uniform_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
      col = outlier_u_log + 1,
-     xlab = "Genetic proximity: total relatedness", 
+     xlab = "Genetic proximity: maximum total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (uniform prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[suspect_u], y = 1-Uniform_Pv3Rs[suspect_u,"I"], 
@@ -169,8 +169,8 @@ plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"],
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
      col = outlier_u_log + 1,
-     xlab = "Genetic proximity: total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (informative prior)")
+     xlab = "Genetic proximity: maximum total relatedness", 
+     ylab = "Relapse plus recrudescence\n probability (time-to-event prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[suspect_t], y = 1-TimeToEvent_Pv3Rs[suspect_t,"I"], 
      labels = suspect_t, pos = 4, cex = 0.5)
@@ -189,7 +189,7 @@ plot(x = rhats_tot, y = 1-X[names(rhats_tot),"I"],
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16,
      col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
-     xlab = "Genetic proximity: total relatedness", 
+     xlab = "Genetic proximity: maximum total relatedness", 
      ylab = "Relapse plus recrudescence\n probability (uniform prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 outlier_PMQ <- names(which(rhats_tot > 0.45 & (1-X[names(rhats_tot),"I"]) < 0.1 & 
@@ -209,8 +209,8 @@ plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"],
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
      col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
-     xlab = "Genetic proximity: total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (informative prior)")
+     xlab = "Genetic proximity: maximum total relatedness", 
+     ylab = "Relapse plus recrudescence\n probability (time-to-event prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[outlier_PMQ], y = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"], 
      labels = outlier_PMQ, pos = 4, cex = 0.5)
