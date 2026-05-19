@@ -126,6 +126,8 @@ length(ys_null) - sum(ys_null_MOItot > 5) # 249155
 # Check numbers of comparisons
 length(min_probs) == n_comp & sum(!is.na(probs[,1])) == n_comp
 nrow(Inflated_Results) # smaller
+# Number of pairs without common marker in previously reported FDR: 
+sum(!is.na(Inflated_Results[, "I"])) - n_one_plus 
 
 #===============================================================================
 # Compute false failure discovery rates with and without comparisons with no
