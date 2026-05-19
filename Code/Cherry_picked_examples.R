@@ -3,7 +3,7 @@
 ################################################################################
 rm(list = ls())
 library(Pv3Rs)
-Fig <- TRUE
+Fig <- T
 
 # VHX_532 (an example of half sibs with a high and low posterior relapse prob.)
 # BPD_45 (a rare example of a possible reinfection with data on nine markers)
@@ -40,7 +40,8 @@ text_col <- unlist(sapply(1:length(cherries), function(i){
 
 if(Fig) png("../Figures/cherries.png", res = 300, width = 10, height = 7, units = "in")
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Reset before text annotation (important)
-plot_data(ys = ys_VHX_BPD[cherries], fs = fs_VHX_BPD, mar = main_mar, marker.annotate = F)
+plot_data(ys = ys_VHX_BPD[cherries], fs = sapply(fs_VHX_BPD, sort, decreasing = T), 
+          mar = main_mar, marker.annotate = F)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Reset before text annotation (important)
 text(y = rep(0.01, length(episodes)), x = seq(z, 1-z, length.out = length(episodes)), 
      labels = text, cex = 0.6, col = text_col)

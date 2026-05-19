@@ -34,16 +34,17 @@ plot(x = rhats_one, y = 1-Uniform_Pv3Rs[,"I"],
      ylab = "Relapse plus recrudescence probability")
 abline(h = q_3Rs, v = q_one, lty = c("dashed", "dotted"), col = "red")
 
-# Total relatedness
+# Approximate total relatedness
 plot(x = rhats_tot, y = 1-Uniform_Pv3Rs[,"I"], 
      cex = rhats_tot_n/9, pch = 19, bty = "n", 
-     xlab = "Total relatedness", 
+     xlab = "Approximate total relatedness", 
      ylab = "Relapse plus recrudescence probability")
 abline(h = q_3Rs, v = q_tot, lty = c("dashed", "dotted"), col = "red")
 
 #===============================================================================
-# Which distance identifies most potential FN at 95% significance: tot and one
-# Use total relatedness hereafter
+# Which distance identifies most potential FN at 95% significance: 
+# approximate total relatedness and one related genotype. 
+# Use total relatedness hereafter. 
 #===============================================================================
 FN_tot <- names(which(rhats_tot > q_tot["95%"] & (1-Uniform_Pv3Rs[,"I"]) < q_3Rs["95%"]))
 FN_one <- names(which(rhats_one > q_one["95%"] & (1-Uniform_Pv3Rs[,"I"]) < q_3Rs["95%"]))
@@ -106,7 +107,7 @@ plot(x = rhats_tot[rownames(thetas_9MS_Tagnostic)],
      y = 1-thetas_9MS_Tagnostic[,"I"], 
      pch = 19, bty = "n", 
      cex = rhats_tot_n[rownames(thetas_9MS_Tagnostic)]/9,
-     xlab = "Genetic proximity: maximum total relatedness", 
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
      ylab = "Prototype")
 abline(v = q_tot, lty = c("dashed", "dotted"), col = "red")
 text(x = rhats_tot[eids_proto_pv3Rs[uls]], 
@@ -119,7 +120,7 @@ plot(x = rhats_tot[rownames(thetas_9MS_Tagnostic)],
      y = 1-Uniform_Pv3Rs[rownames(thetas_9MS_Tagnostic),"I"], 
      pch = 19, bty = "n", 
      cex = rhats_tot_n[rownames(thetas_9MS_Tagnostic)]/9,
-     xlab = "Genetic proximity: maximum total relatedness", 
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
      ylab = "Pv3Rs (data modelled jointly)")
 abline(v = q_tot, lty = c("dashed", "dotted"), col = "red")
 text(x = rhats_tot[eids_proto_pv3Rs[uls]], 
@@ -131,7 +132,7 @@ plot(x = rhats_tot[rownames(thetas_9MS_Tagnostic)],
      y = 1-Uniform_pwise[rownames(thetas_9MS_Tagnostic), "I"],
      pch = 19, bty = "n", 
      cex = rhats_tot_n[rownames(thetas_9MS_Tagnostic)]/9, 
-     xlab = "Genetic proximity: maximum total relatedness", 
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
      ylab = "Pv3Rs (data modelled pairwise)")
 abline(v = q_tot, lty = c("dashed", "dotted"), col = "red")
 text(x = rhats_tot[eids_proto_pv3Rs[uls]], y = 1-Uniform_pwise[eids_proto_pv3Rs[uls],"I"], 
@@ -140,7 +141,7 @@ text(x = rhats_tot[eids_proto_pv3Rs[uls]], y = 1-Uniform_pwise[eids_proto_pv3Rs[
 #===============================================================================
 # Plots for ms
 #===============================================================================
-# List recurrences where misspecification is stongly suspected for uniform and time-to-event: 
+# List recurrences where misspecification is strongly suspected for uniform and time-to-event: 
 suspect_u <- c(proto = c("VHX_56_2", "VHX_91_2"), # pv3rs vs proto
                uncom = "VHX_39_2", # uncomputable using the prototype
                pwise = c("VHX_113_6", "VHX_450_8", "VHX_489_4", "VHX_529_4", "VHX_532_4")) 
@@ -149,35 +150,35 @@ suspect_t <- c(proto = c("VHX_56_2"))
 # Identify outliers using visual inspection:
 outlier_u_log <- rhats_tot > 0.42 & (1-Uniform_Pv3Rs[names(rhats_tot),"I"]) < 0.7
 
-if (Figs) pdf(file = "../Figures/compare_Pv3Rs_vs_proximity.pdf", height = 7, width = 12)
+if (Figs) pdf(file = "../Figures/compare_Pv3Rs_vs_relatedness.pdf", height = 7, width = 12)
 par(mfrow = c(2,1), mar = c(5,5,1,2))
 plot(x = rhats_tot, y = 1-Uniform_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
      col = outlier_u_log + 1,
-     xlab = "Genetic proximity: maximum total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (uniform prior)")
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
+     ylab = "Posterior probability of relapse or\n recrudescence (uniform prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[suspect_u], y = 1-Uniform_Pv3Rs[suspect_u,"I"], 
      labels = suspect_u, pos = 4, cex = 0.5)
 legend("right", legend = c("PQ-untreated", "PQ-treated"), pch = c(16, 17), 
        bty = "n", inset = 0.18)
-legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
-       title = "Marker count", bty = "n")
+legend("bottomright", legend = c("1 marker", paste(2:9, "markers")), pch = 15, 
+       pt.cex = 1:9/9, bty = "n")
 
 plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
      col = outlier_u_log + 1,
-     xlab = "Genetic proximity: maximum total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (time-to-event prior)")
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
+     ylab = "Posterior probability of relapse or\n recrudescence (time-to-event prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[suspect_t], y = 1-TimeToEvent_Pv3Rs[suspect_t,"I"], 
      labels = suspect_t, pos = 4, cex = 0.5)
 legend("right", legend = c("PQ-untreated", "PQ-treated"), pch = c(16, 17), 
        bty = "n", inset = 0.18)
-legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
-       title = "Marker count", bty = "n")
+legend("bottomright", legend = c("1 marker", paste(2:9, "markers")), pch = 15, 
+       pt.cex = 1:9/9, bty = "n")
 if (Figs) dev.off()
 
 if (Figs) pdf(file = "../Figures/outlier_correction.pdf", height = 3.5, width = 12)
@@ -189,8 +190,8 @@ plot(x = rhats_tot, y = 1-X[names(rhats_tot),"I"],
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16,
      col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
-     xlab = "Genetic proximity: maximum total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (uniform prior)")
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
+     ylab = "Posterior probability of relapse or\n recrudescence (uniform prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 outlier_PMQ <- names(which(rhats_tot > 0.45 & (1-X[names(rhats_tot),"I"]) < 0.1 & 
                              PMQ[names(rhats_tot)]))
@@ -201,16 +202,17 @@ arrows(x0 = rhats_tot[outlier_PMQ], x1 = rhats_tot[outlier_PMQ],
        y1 = 0.95, length = 0.05)
 legend("right", legend = c("PQ-untreated", "PQ-treated"), 
        col = c("lightgrey","black"), pch = c(16, 17), bty = "n", inset = 0.18)
-legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9, 
-       title = "Marker count", bty = "n")
+legend("bottomright", legend = c("1 marker", paste(2:9, "markers")), pch = 15, 
+       pt.cex = 1:9/9, bty = "n")
 if (Figs) dev.off()
+
 
 plot(x = rhats_tot, y = 1-TimeToEvent_Pv3Rs[names(rhats_tot),"I"], 
      cex = rhats_tot_n/9, bty = "n", 
      pch = PMQ[names(rhats_tot)] + 16, 
      col = c("lightgrey","black")[PMQ[names(rhats_tot)]+1],
-     xlab = "Genetic proximity: maximum total relatedness", 
-     ylab = "Relapse plus recrudescence\n probability (time-to-event prior)")
+     xlab = "Genetic relatedness: maximum approximate total relatedness", 
+     ylab = "Relapse plus recrudescence\n posterior probability (time-to-event prior)")
 abline(v = q_tot["95%"], lty = "dashed")
 text(x = rhats_tot[outlier_PMQ], y = 1-TimeToEvent_Pv3Rs[outlier_PMQ,"I"], 
      labels = outlier_PMQ, pos = 4, cex = 0.5)
@@ -225,20 +227,20 @@ legend("bottomright", legend = 1:9, pch = 15, pt.cex = 1:9/9,
 
 
 #===============================================================================
-# Numbers for ms: 
+# Pv3Rs probabilities averaged over genetic-relatedness classifications: 
 #===============================================================================
-# Average probability of relapse among reinfection-classified 
+# Average probability of relapse among reinfection-classified (not reported in ms)
 sum(Uniform_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "L"])/sum(rhats_tot <= q_tot["95%"])
 sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "L"])/sum(rhats_tot <= q_tot["95%"])
 
-# Aside: average probability of recrudescence among reinfection-classified 
+# Average probability of recrudescence among reinfection-classified (not reported in ms)
 sum(Uniform_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "C"])/sum(rhats_one <= q_one["95%"])
 sum(TimeToEvent_Pv3Rs[which(rhats_tot <= q_tot["95%"]), "C"])/sum(rhats_one <= q_one["95%"])
 
-# Average probability of reinfection among relapse/recrudescence classified
+# Average probability of reinfection among relapse/recrudescence classified (reported in ms)
 sum(Uniform_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
 sum(X[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"]) # joint-to-pwise outlier correction
-sum(TimeToEvent_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"])
+sum(TimeToEvent_Pv3Rs[which(rhats_tot > q_tot["95%"]), "I"])/sum(rhats_tot > q_tot["95%"]) 
 
 
 #===============================================================================
@@ -273,7 +275,8 @@ z <- 1/(2*length(episodes)) # See text x placement
 # Plot for ms
 if(Figs) png("../Figures/data_outliers.png", width = 10, height = 7, units = "in", res = 300) 
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar, mfrow = c(1,1)) # Important to call before and after plot_data
-plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar, person.vert = T)
+plot_data(ys = ys_VHX_BPD[pids], fs = sapply(fs_VHX_BPD, sort, decreasing = T), 
+          marker.annotate = F, mar = main_mar, person.vert = T)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
 text(y = rep(0.0375, length(episodes)),
      x = seq(z, 1-z, length.out = length(episodes)),

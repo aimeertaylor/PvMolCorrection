@@ -19,6 +19,11 @@ table(sapply(ys_VHX_BPD, length))[-1]
 # Load data from all participants to extract meta data
 load("../jwatowatson-RecurrentVivax-4870715/RData/TimingModel/Combined_Time_Event.RData") 
 
+# NB: In Combined_Time_Data$arm_num, DHA-PIP has been combined with CQ (compare
+# following with Table 1 of Taylor & Watson 2019)
+table(Combined_Time_Data$arm_num) 
+
+
 # Episode counts and treatment for all participant IDs inc. those whose episodes were not typed
 epi_counts <- sapply(split(Combined_Time_Data$episode[Combined_Time_Data$Censored != 1], 
                            Combined_Time_Data$patientid[Combined_Time_Data$Censored != 1]), max)
@@ -96,7 +101,8 @@ names_repeat_episode_arm <- c(names_repeat_episode_BPD,
 
 if(Figs) png("../Figures/data_repeat_episode.png", res = 300, height = 9, width = 20, units = "in")
 Pv3Rs::plot_data(ys = ys_VHX_BPD[names_repeat_episode_arm], 
-                 fs = fs_VHX_BPD, marker.annotate = F, person.vert = T,
+                 fs = sapply(fs_VHX_BPD, sort, decreasing = T), 
+                 marker.annotate = F, person.vert = T,
                  mar = c(2,3.5,1,3), 
                  gridlines = F) # Margin around main plot)
 if(Figs) dev.off()
@@ -136,7 +142,8 @@ z <- 1/(2*length(episodes)) # See text x placement
 if(Figs) png("../Figures/data_uncomputable.png", res = 300, height = 7, width = 10, units = "in")
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data 
 Pv3Rs::plot_data(ys = Pv3Rs::ys_VHX_BPD[pids], 
-                fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar)
+                 fs = sapply(fs_VHX_BPD, sort, decreasing = T), 
+                 marker.annotate = F, mar = main_mar)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
 text(y = rep(0.011, length(episodes)), # right justify 
      x = seq(z, 1-z, length.out = length(episodes)), 
