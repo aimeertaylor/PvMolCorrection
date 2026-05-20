@@ -1,19 +1,19 @@
 ################################################################################
-# Joint vs pairwise probabilities
-# The for loop is sub-optimally coded
+# Joint vs pairwise Pv3Rs-computed probabilities
 ################################################################################
 rm(list = ls())
-library(Pv3Rs) # For plot_data
+library(Pv3Rs) 
 load("../RData/results_Pv3Rs.RData")
 big_diff <- 0.25 # probability difference considered large
 states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
 priors <- c("uniform" = "Uniform", "time-to-event" = "TimeToEvent")
-pids_big_diff <- list()
-eids_big_diff <- list()
+pids_big_diff <- eids_big_diff <- list() # Store for discrepant pids and eids
+marg_pwise <- marg_joint <- list() # Store for extracted marginal probabilities
 Figs <- TRUE
-marg_pwise <- list() # Store for extracted marginal probabilities
-marg_joint <- list() # Store for extracted marginal probabilities
 
+#===============================================================================
+# Scatter plot and extraction of discrepant pids/eids; for loop sub-optimal
+#===============================================================================
 if(Figs) png("../Figures/compare_joint_vs_pwise.png", 
              width = 7, height = 10, units = "in", res = 300)
 par(mfcol = c(3,2))
@@ -102,9 +102,10 @@ for(prior in priors) {
   
 }
 if(Figs) dev.off()
+save(marg_pwise, marg_joint, file = "../RData/marg_joint_pwise.RData") 
 
 #===============================================================================
-# MS Figure
+# MS figure
 #===============================================================================
 pids <- unique(unlist(pids_big_diff)) # All pids with a probability discrepant recurrence
 unlist(eids_big_diff) == unique(unlist(eids_big_diff)) # No duplicate pids 
@@ -158,6 +159,8 @@ points(y = rep(-0.01, length(unlist(eids_big_diff))),
        pch = 17, cex = 0.5) 
 if(Figs) dev.off()
 
-# Understand the outlyer given the time-to-event prior: 
+#===============================================================================
+# Understand the single outlier given the time-to-event prior: 
+#===============================================================================
 load("../RData/prior_estimates.RData")
 prior["VHX_419_6",]
