@@ -59,7 +59,7 @@ for(prior in priors) {
     plot(x = unlst_joint[unlst_n_rec > 1, s], 
          y = unlst_pwise[unlst_n_rec > 1, s], 
          xlim = c(0,1), ylim = c(0,1),
-         ylab = "Pairwise", xlab = "Joint", pch = 20,
+         ylab = "Approximate joint", xlab = "Joint", pch = 20,
          bty = "n", 
          main = sprintf("%s: %s prior", names(which(states == s)), names(which(priors == prior))))
     abline(a = 0, b = 1, lty = "dotted")
