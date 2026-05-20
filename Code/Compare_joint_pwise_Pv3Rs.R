@@ -144,8 +144,9 @@ z <- 1/(2*length(episodes)) # See text x placement
 # Plot for ms
 if(Figs) png("../Figures/data_joint_vs_pwise.png", width = 10, height = 7, units = "in", res = 300) 
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
-plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar)
-par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
+plot_data(ys = ys_VHX_BPD[pids], fs = sapply(fs_VHX_BPD, sort, decreasing = T), 
+          marker.annotate = F, mar = main_mar)
+par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Must call before and after plot_data
 text(y = rep(0.04, length(episodes)),
      x = seq(z, 1-z, length.out = length(episodes)), 
      labels = text_pwise, cex = 0.6, col = "black")
@@ -157,5 +158,6 @@ points(y = rep(-0.01, length(unlist(eids_big_diff))),
        pch = 17, cex = 0.5) 
 if(Figs) dev.off()
 
+# Understand the outlyer given the time-to-event prior: 
 load("../RData/prior_estimates.RData")
 prior["VHX_419_6",]

@@ -13,7 +13,7 @@
 ################################################################################
 rm(list = ls())
 library(Pv3Rs)
-Figs <- TRUE
+Figs <- T
 states <- c(Recrudescence = "C", Reinfection = "I", Relapse = "L")
 par_default <- par()
 big_diff <- 0.25
@@ -256,7 +256,8 @@ z <- 1/(2*length(episodes)) # See text x placement
 # Plot for ms
 if(Figs) png("../Figures/data_Pv3Rs_vs_prototype.png", width = 10, height = 7, units = "in", res = 300)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
-plot_data(ys = ys_VHX_BPD[pids], fs = fs_VHX_BPD, marker.annotate = F, mar = main_mar)
+plot_data(ys = ys_VHX_BPD[pids], fs = sapply(fs_VHX_BPD, sort, decreasing = T), 
+          marker.annotate = F, mar = main_mar)
 par(fig = c(0,1,0.2+0.01,1), mar = main_mar) # Important to call before and after plot_data
 text(y = rep(0.01, length(episodes)),
      x = seq(z, 1-z, length.out = length(episodes)), 
