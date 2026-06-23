@@ -80,5 +80,7 @@ given access to only marginal probabilities.
 if matches seen a > 1/3 first three markers.
 - `Compare_failure_recur_independence.R` to see the impact of computing
 probabilities of failure assuming and not independence between recurrences
-- `Visualise_follow_uo.R` to see how first recurrences recover follow up protocol
+- `Visualise_follow_up.R` to see how first recurrences recover follow up protocol
+- `Chance_matching.R` to see how probabilities assuming iid draws compare with Dcifer 
+relatedness estimates and Pv3Rs posteriors.
 
