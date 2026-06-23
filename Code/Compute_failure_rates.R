@@ -245,7 +245,10 @@ Pv3Rs_CIs <- c(sprintf("(%s)", paste(round(Pv3Rs_BPD_CI, 2), collapse = " ")),
 prototype_CIs 
 Pv3Rs_CIs # for outlier_correction FALSE and TRUE 
 
-# Identity check: despite different probabilities, percentiles are the same
+# Identity check: despite different probabilities, percentiles are the same;
+# Poisson-Binomial credible intervals are multiples of 100/N, whereas the mean
+# need not be (mean of a integer-valued RV does not have to be integer, but its
+# quantiles are).
 if (!outlier_correction) {
   identical(patient_summaries$Failure_prototype_median[ind_BPD], patient_summaries$Failure_Pv3Rs[ind_BPD])
   identical(prototype_BPD_CI, Pv3Rs_BPD_CI)  
